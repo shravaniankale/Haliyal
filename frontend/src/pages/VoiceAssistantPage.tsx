@@ -27,7 +27,16 @@ import {
   ShieldAlert,
   Sprout,
   Sliders,
-  Power
+  Power,
+  Clock,
+  FileText,
+  ShieldCheck,
+  Leaf,
+  Droplets,
+  CloudSun,
+  Bug,
+  CreditCard,
+  TrendingUp
 } from 'lucide-react';
 import { useSettings, RegionalDialect, VoiceGender } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -63,6 +72,7 @@ export const VoiceAssistantPage: React.FC = () => {
   const [isMuted, setIsMuted] = useState(!autoVoiceResponse);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [hasStartedVoice, setHasStartedVoice] = useState(false);
 
   // Active Session & Conversation ID
   const [sessionId, setSessionId] = useState<string>(() => 'sess_' + Math.random().toString(36).substring(2, 10));
@@ -268,8 +278,8 @@ export const VoiceAssistantPage: React.FC = () => {
         if (newConv.messages && newConv.messages.length > 0) {
           setMessages(newConv.messages);
           const firstMsg = newConv.messages[0];
-          if (firstMsg.audio_url && autoVoiceResponse && !isMuted) {
-            playAudio(firstMsg.audio_url, firstMsg.id || 1);
+          if (autoVoiceResponse && !isMuted) {
+            playAudio(firstMsg.audio_url || '', firstMsg.id || 1, firstMsg.text_kn || firstMsg.text);
           }
         }
       } catch (err) {
@@ -397,8 +407,58 @@ export const VoiceAssistantPage: React.FC = () => {
     };
   }, []);
 
+  // Web Speech Synthesis fallback for pure Kannada voice playback
+  const speakWithWebSpeech = (text: string, onEnd?: () => void) => {
+    if (!('speechSynthesis' in window)) {
+      if (onEnd) onEnd();
+      return;
+    }
+    try {
+      window.speechSynthesis.cancel();
+      const cleanText = text.replace(/[*#_~]/g, '');
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = language === 'kn' ? 'kn-IN' : 'en-IN';
+      utterance.rate = speechSpeed || 1.0;
+      const voices = window.speechSynthesis.getVoices();
+      const knVoice = voices.find(
+        (v) => v.lang.includes('kn') || v.lang.toLowerCase().includes('kannada')
+      );
+      if (knVoice) {
+        utterance.voice = knVoice;
+      }
+      utterance.onend = () => {
+        setConvState('idle');
+        if (onEnd) onEnd();
+      };
+      utterance.onerror = () => {
+        setConvState('idle');
+        if (onEnd) onEnd();
+      };
+      setConvState('speaking');
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      setConvState('idle');
+      if (onEnd) onEnd();
+    }
+  };
+
+  const startListeningAuto = () => {
+    if (!voiceInputEnabled || !recognitionRef.current) return;
+    try {
+      recognitionRef.current.lang = language === 'en' ? 'en-IN' : 'kn-IN';
+      recognitionRef.current.start();
+      setConvState('listening');
+    } catch (err) {
+      console.warn('Auto start listening error:', err);
+      setConvState('idle');
+    }
+  };
+
   // Strict Single Audio Controller
   const stopAudio = () => {
+    if ('speechSynthesis' in window) {
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+    }
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -410,14 +470,25 @@ export const VoiceAssistantPage: React.FC = () => {
     }
   };
 
-  const playAudio = (url: string, messageId: number | string) => {
-    if (isMuted || !url) {
+  const playAudio = (url: string, messageId: number | string, fallbackText?: string) => {
+    if (isMuted) {
       stopAudio();
       return;
     }
 
     // Stop currently running audio instance
     stopAudio();
+
+    if (!url) {
+      if (fallbackText) {
+        speakWithWebSpeech(fallbackText, () => {
+          if (voiceInputEnabled && autoVoiceResponse) {
+            setTimeout(startListeningAuto, 300);
+          }
+        });
+      }
+      return;
+    }
 
     try {
       const audio = new Audio(url);
@@ -429,18 +500,39 @@ export const VoiceAssistantPage: React.FC = () => {
 
       audio.onended = () => {
         stopAudio();
+        if (voiceInputEnabled && autoVoiceResponse) {
+          setTimeout(startListeningAuto, 300);
+        }
       };
 
       audio.onerror = () => {
+        console.warn('Audio playback error, falling back to Web Speech Synthesis');
         stopAudio();
+        if (fallbackText) {
+          speakWithWebSpeech(fallbackText, () => {
+            if (voiceInputEnabled && autoVoiceResponse) {
+              setTimeout(startListeningAuto, 300);
+            }
+          });
+        }
       };
 
       audio.play().catch((err) => {
-        console.warn('Audio play prevented:', err);
+        console.warn('Audio play prevented or blocked:', err);
         stopAudio();
+        if (fallbackText) {
+          speakWithWebSpeech(fallbackText, () => {
+            if (voiceInputEnabled && autoVoiceResponse) {
+              setTimeout(startListeningAuto, 300);
+            }
+          });
+        }
       });
     } catch (e) {
       stopAudio();
+      if (fallbackText) {
+        speakWithWebSpeech(fallbackText);
+      }
     }
   };
 
@@ -458,6 +550,16 @@ export const VoiceAssistantPage: React.FC = () => {
     }
   };
 
+  const handleStartVoiceConversation = () => {
+    setHasStartedVoice(true);
+    const lastBotMsg = [...messages].reverse().find((m) => m.sender === 'assistant');
+    if (lastBotMsg) {
+      playAudio(lastBotMsg.audio_url || '', lastBotMsg.id || 1, lastBotMsg.text_kn || lastBotMsg.text);
+    } else {
+      startListeningAuto();
+    }
+  };
+
   // Toggle Mic
   const toggleListening = () => {
     if (!voiceInputEnabled) {
@@ -466,6 +568,11 @@ export const VoiceAssistantPage: React.FC = () => {
           ? 'ಧ್ವನಿ ಇನ್‌ಪುಟ್ ಅನ್ನು ಪ್ರೊಫೈಲ್ ಸೆಟ್ಟಿಂಗ್ಸ್‌ನಲ್ಲಿ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ.'
           : 'Voice input is disabled in settings. Enable it from Profile Settings.'
       );
+      return;
+    }
+
+    if (!hasStartedVoice) {
+      handleStartVoiceConversation();
       return;
     }
 
@@ -484,22 +591,7 @@ export const VoiceAssistantPage: React.FC = () => {
       return;
     }
 
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.lang = language === 'en' ? 'en-IN' : 'kn-IN';
-        recognitionRef.current.start();
-        setConvState('listening');
-      } catch (err) {
-        console.warn('Recognition start error:', err);
-        setConvState('idle');
-      }
-    } else {
-      setErrorMessage(
-        language === 'kn'
-          ? 'ಬ್ರೌಸರ್‌ನಲ್ಲಿ Web Speech ಲಭ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ಕೆಳಗೆ ಟೈಪ್ ಮಾಡಿ.'
-          : 'Web Speech API not supported in this browser. Please type below.'
-      );
-    }
+    startListeningAuto();
   };
 
   // Send message to AI
@@ -571,8 +663,8 @@ export const VoiceAssistantPage: React.FC = () => {
         } catch (e) {}
       }
 
-      if (res.audio_url && !isMuted && autoVoiceResponse) {
-        playAudio(res.audio_url, botMsgId);
+      if (!isMuted && autoVoiceResponse) {
+        playAudio(res.audio_url || '', botMsgId, res.reply_kn || res.reply);
       } else {
         setConvState('idle');
       }
@@ -682,6 +774,20 @@ export const VoiceAssistantPage: React.FC = () => {
     }
   };
 
+  // 10 Core Agricultural Assistance Options
+  const assistanceOptions10 = [
+    { id: '1', kn: 'ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು', en: 'Government Schemes', descKn: 'ಪಿಎಂ ಕಿಸಾನ್, ಕೃಷಿ ಭಾಗ್ಯ, ಸಹಾಯಧನ', icon: FileText },
+    { id: '2', kn: 'ಬೆಳೆ ವಿಮೆ', en: 'Crop Insurance', descKn: 'ಪಿಎಂಎಫ್‌ಬಿವೈ, ಸಂರಕ್ಷಣೆ ಪೋರ್ಟಲ್', icon: ShieldCheck },
+    { id: '3', kn: 'ಗೊಬ್ಬರ ಸಲಹೆ', en: 'Fertilizer Advice', descKn: 'ಯುಎಎಸ್ ಎನ್‌ಪಿಕೆ, ಸಾವಯವ ಗೊಬ್ಬರ', icon: Leaf },
+    { id: '4', kn: 'ಬೆಳೆ ಮಾರ್ಗದರ್ಶನ', en: 'Crop Guidance', descKn: 'ವೈಜ್ಞಾನಿಕ ಕೃಷಿ, ಬಿತ್ತನೆ ಮಾಹಿತಿ', icon: Sprout },
+    { id: '5', kn: 'ನೀರಾವರಿ ಸಲಹೆ', en: 'Irrigation Advisory', descKn: 'ಹನಿ ನೀರಾವರಿ, ಬೋರ್‌ವೆಲ್ ಬಳಕೆ', icon: Droplets },
+    { id: '6', kn: 'ಹವಾಮಾನ ಮಾಹಿತಿ', en: 'Live Weather', descKn: 'ಮಳೆ ಮುನ್ಸೂಚನೆ, ಸಿಂಪಡಣೆ ಸಮಯ', icon: CloudSun },
+    { id: '7', kn: 'ಕೀಟ ಮತ್ತು ರೋಗ ನಿರ್ವಹಣೆ', en: 'Pest & Disease', descKn: 'ಹುಳು ನಿಯಂತ್ರಣ, ಔಷಧ ಪ್ರಮಾಣ', icon: Bug },
+    { id: '8', kn: 'ಕೃಷಿ ಸಾಲಗಳು', en: 'Agri Loans', descKn: 'ಕೆಸಿಸಿ ಕಿಸಾನ್ ಕಾರ್ಡ್, ಶೂನ್ಯ ಬಡ್ಡಿ', icon: CreditCard },
+    { id: '9', kn: 'ಮಾರುಕಟ್ಟೆ ದರ', en: 'Market Prices', descKn: 'ಎಪಿಎಂಸಿ ಮಂಡಿ ಇಂದಿನ ಧಾರಣೆ', icon: TrendingUp },
+    { id: '10', kn: 'ಸಂಪೂರ್ಣ ಕೃಷಿ ನೆರವು', en: 'Complete Advisory', descKn: 'ಸಮಗ್ರ ಕೃಷಿ ಸಲಹಾ ಪ್ಯಾಕೇಜ್', icon: Sparkles },
+  ];
+
   // Confirmed details badges (reused from saved profile + current session)
   const effectiveDetails = {
     district: confirmedDetails.district || profile?.district,
@@ -689,11 +795,12 @@ export const VoiceAssistantPage: React.FC = () => {
     village: confirmedDetails.village || profile?.village,
     crop: confirmedDetails.crop || confirmedDetails.primary_crop || profile?.primary_crop || (profile?.crops_grown && profile.crops_grown[0]),
     other_crops: confirmedDetails.other_crops || confirmedDetails.crops || profile?.secondary_crops,
-    land: confirmedDetails.land_acres || profile?.land_acres,
-    ownership: confirmedDetails.land_ownership || profile?.land_ownership,
+    land: confirmedDetails.land_acres ?? confirmedDetails.land_size ?? profile?.land_acres,
+    ownership: confirmedDetails.land_ownership || confirmedDetails.ownership_type || profile?.land_ownership,
     category: confirmedDetails.farmer_category || profile?.farmer_category,
-    irrigation: confirmedDetails.irrigation || profile?.irrigation_type,
+    irrigation: confirmedDetails.irrigation || confirmedDetails.irrigation_type || profile?.irrigation_type,
     soil: confirmedDetails.soil_type || profile?.soil_type,
+    season: confirmedDetails.season || profile?.agricultural_season,
     stage: confirmedDetails.crop_stage || profile?.crop_stage
   };
 
@@ -806,6 +913,18 @@ export const VoiceAssistantPage: React.FC = () => {
                   : 'Tap the Microphone to Speak'}
               </h2>
             </div>
+
+            {/* Talk to AI Direct Spoken Initiation Button */}
+            {!hasStartedVoice && (
+              <button
+                type="button"
+                onClick={handleStartVoiceConversation}
+                className="my-3 inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs shadow-lg shadow-emerald-700/30 font-kannada transition-all hover:scale-105 active:scale-95 animate-pulse"
+              >
+                <Volume2 className="w-4 h-4 text-amber-300" />
+                <span>{language === 'kn' ? 'ಧ್ವನಿ ಸಂವಾದ ಪ್ರಾರಂಭಿಸಿ (Talk to AI)' : 'Talk to AI (Start Spoken Conversation)'}</span>
+              </button>
+            )}
 
             {/* Glowing Center Orb */}
             <div className="relative my-8">
@@ -962,63 +1081,91 @@ export const VoiceAssistantPage: React.FC = () => {
             </p>
 
             <div className="grid grid-cols-2 gap-2 text-xs font-kannada">
-              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
+              {/* 1. District & Taluk */}
+              <div className={`p-2.5 rounded-xl border transition-all ${effectiveDetails.district ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60'}`}>
                 <div className="flex items-center justify-between text-[10px] text-slate-500">
                   <span>{language === 'kn' ? 'ಜಿಲ್ಲೆ / ತಾಲೂಕು' : 'District/Taluk'}</span>
-                  {effectiveDetails.district && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                  {effectiveDetails.district ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Clock className="w-3.5 h-3.5 text-amber-500" />}
                 </div>
-                <div className="font-bold text-slate-800 dark:text-slate-200 truncate mt-0.5">
-                  {effectiveDetails.district ? `${effectiveDetails.district}${effectiveDetails.taluk ? `, ${effectiveDetails.taluk}` : ''}` : (language === 'kn' ? 'ಬಾಕಿ ಇದೆ...' : 'Pending...')}
-                </div>
-              </div>
-
-              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
-                <div className="flex items-center justify-between text-[10px] text-slate-500">
-                  <span>{language === 'kn' ? 'ಮುಖ್ಯ ಬೆಳೆ' : 'Primary Crop'}</span>
-                  {effectiveDetails.crop && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
-                </div>
-                <div className="font-bold text-slate-800 dark:text-slate-200 truncate mt-0.5">
-                  {effectiveDetails.crop || (language === 'kn' ? 'ಬಾಕಿ ಇದೆ...' : 'Pending...')}
+                <div className={`font-bold truncate mt-0.5 ${effectiveDetails.district ? 'text-emerald-900 dark:text-emerald-200' : 'text-slate-400'}`}>
+                  {effectiveDetails.district ? `${effectiveDetails.district}${effectiveDetails.taluk ? `, ${effectiveDetails.taluk}` : ''}` : (language === 'kn' ? 'ಬಾಕಿ ಇದೆ (Pending)' : 'Pending...')}
                 </div>
               </div>
 
-              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
+              {/* 2. Land Size */}
+              <div className={`p-2.5 rounded-xl border transition-all ${effectiveDetails.land ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60'}`}>
                 <div className="flex items-center justify-between text-[10px] text-slate-500">
                   <span>{language === 'kn' ? 'ಜಮೀನಿನ ವಿಸ್ತೀರ್ಣ' : 'Land Size'}</span>
-                  {effectiveDetails.land && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                  {effectiveDetails.land ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Clock className="w-3.5 h-3.5 text-amber-500" />}
                 </div>
-                <div className="font-bold text-slate-800 dark:text-slate-200 truncate mt-0.5">
-                  {effectiveDetails.land ? `${effectiveDetails.land} ಎಕರೆ` : (language === 'kn' ? 'ಬಾಕಿ ಇದೆ...' : 'Pending...')}
+                <div className={`font-bold truncate mt-0.5 ${effectiveDetails.land ? 'text-emerald-900 dark:text-emerald-200' : 'text-slate-400'}`}>
+                  {effectiveDetails.land ? `${effectiveDetails.land} ಎಕರೆ` : (language === 'kn' ? 'ಬಾಕಿ ಇದೆ (Pending)' : 'Pending...')}
                 </div>
               </div>
 
-              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
+              {/* 3. Land Ownership */}
+              <div className={`p-2.5 rounded-xl border transition-all ${effectiveDetails.ownership ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60'}`}>
                 <div className="flex items-center justify-between text-[10px] text-slate-500">
-                  <span>{language === 'kn' ? 'ಮಾಲೀಕತ್ವ' : 'Ownership'}</span>
-                  {effectiveDetails.ownership && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                  <span>{language === 'kn' ? 'ಭೂಮಿ ಮಾಲೀಕತ್ವ' : 'Land Ownership'}</span>
+                  {effectiveDetails.ownership ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Clock className="w-3.5 h-3.5 text-amber-500" />}
                 </div>
-                <div className="font-bold text-slate-800 dark:text-slate-200 truncate mt-0.5">
-                  {effectiveDetails.ownership || (language === 'kn' ? 'ಸ್ವಂತ / ಗುತ್ತಿಗೆ' : 'Pending')}
+                <div className={`font-bold truncate mt-0.5 ${effectiveDetails.ownership ? 'text-emerald-900 dark:text-emerald-200' : 'text-slate-400'}`}>
+                  {effectiveDetails.ownership || (language === 'kn' ? 'ಬಾಕಿ ಇದೆ (Pending)' : 'Pending...')}
                 </div>
               </div>
 
-              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
+              {/* 4. Farmer Category */}
+              <div className={`p-2.5 rounded-xl border transition-all ${effectiveDetails.category ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60'}`}>
                 <div className="flex items-center justify-between text-[10px] text-slate-500">
                   <span>{language === 'kn' ? 'ರೈತ ವರ್ಗ' : 'Category'}</span>
-                  {effectiveDetails.category && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                  {effectiveDetails.category ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Clock className="w-3.5 h-3.5 text-amber-500" />}
                 </div>
-                <div className="font-bold text-slate-800 dark:text-slate-200 truncate mt-0.5">
-                  {effectiveDetails.category || (language === 'kn' ? 'ಸ್ವಯಂ ವರ್ಗೀಕರಣ' : 'Auto')}
+                <div className={`font-bold truncate mt-0.5 ${effectiveDetails.category ? 'text-emerald-900 dark:text-emerald-200' : 'text-slate-400'}`}>
+                  {effectiveDetails.category || (language === 'kn' ? 'ಬಾಕಿ ಇದೆ (Pending)' : 'Pending...')}
                 </div>
               </div>
 
-              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
+              {/* 5. Primary Crop */}
+              <div className={`p-2.5 rounded-xl border transition-all ${effectiveDetails.crop ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60'}`}>
                 <div className="flex items-center justify-between text-[10px] text-slate-500">
-                  <span>{language === 'kn' ? 'ನೀರಾವರಿ & ಮಣ್ಣು' : 'Irrigation & Soil'}</span>
-                  {(effectiveDetails.irrigation || effectiveDetails.soil) && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                  <span>{language === 'kn' ? 'ಮುಖ್ಯ ಬೆಳೆ' : 'Primary Crop'}</span>
+                  {effectiveDetails.crop ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Clock className="w-3.5 h-3.5 text-amber-500" />}
                 </div>
-                <div className="font-bold text-slate-800 dark:text-slate-200 truncate mt-0.5">
-                  {effectiveDetails.irrigation || 'ಬೋರ್‌ವೆಲ್'}{effectiveDetails.soil ? ` • ${effectiveDetails.soil}` : ''}
+                <div className={`font-bold truncate mt-0.5 ${effectiveDetails.crop ? 'text-emerald-900 dark:text-emerald-200' : 'text-slate-400'}`}>
+                  {effectiveDetails.crop || (language === 'kn' ? 'ಬಾಕಿ ಇದೆ (Pending)' : 'Pending...')}
+                </div>
+              </div>
+
+              {/* 6. Irrigation Facility */}
+              <div className={`p-2.5 rounded-xl border transition-all ${effectiveDetails.irrigation ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60'}`}>
+                <div className="flex items-center justify-between text-[10px] text-slate-500">
+                  <span>{language === 'kn' ? 'ನೀರಾವರಿ ಸೌಲಭ್ಯ' : 'Irrigation'}</span>
+                  {effectiveDetails.irrigation ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Clock className="w-3.5 h-3.5 text-amber-500" />}
+                </div>
+                <div className={`font-bold truncate mt-0.5 ${effectiveDetails.irrigation ? 'text-emerald-900 dark:text-emerald-200' : 'text-slate-400'}`}>
+                  {effectiveDetails.irrigation || (language === 'kn' ? 'ಬಾಕಿ ಇದೆ (Pending)' : 'Pending...')}
+                </div>
+              </div>
+
+              {/* 7. Soil Type */}
+              <div className={`p-2.5 rounded-xl border transition-all ${effectiveDetails.soil ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60'}`}>
+                <div className="flex items-center justify-between text-[10px] text-slate-500">
+                  <span>{language === 'kn' ? 'ಮಣ್ಣಿನ ವಿಧ' : 'Soil Type'}</span>
+                  {effectiveDetails.soil ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Clock className="w-3.5 h-3.5 text-amber-500" />}
+                </div>
+                <div className={`font-bold truncate mt-0.5 ${effectiveDetails.soil ? 'text-emerald-900 dark:text-emerald-200' : 'text-slate-400'}`}>
+                  {effectiveDetails.soil || (language === 'kn' ? 'ಬಾಕಿ ಇದೆ (Pending)' : 'Pending...')}
+                </div>
+              </div>
+
+              {/* 8. Season & Crop Stage */}
+              <div className={`p-2.5 rounded-xl border transition-all ${effectiveDetails.stage || effectiveDetails.season ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60'}`}>
+                <div className="flex items-center justify-between text-[10px] text-slate-500">
+                  <span>{language === 'kn' ? 'ಹಂಗಾಮು & ಹಂತ' : 'Season & Stage'}</span>
+                  {effectiveDetails.stage || effectiveDetails.season ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Clock className="w-3.5 h-3.5 text-amber-500" />}
+                </div>
+                <div className={`font-bold truncate mt-0.5 ${effectiveDetails.stage || effectiveDetails.season ? 'text-emerald-900 dark:text-emerald-200' : 'text-slate-400'}`}>
+                  {effectiveDetails.stage || effectiveDetails.season || (language === 'kn' ? 'ಖಾರಿಫ್ (Kharif)' : 'Kharif')}
                 </div>
               </div>
             </div>
@@ -1066,8 +1213,43 @@ export const VoiceAssistantPage: React.FC = () => {
                       </p>
                     )}
 
+                    {/* 10 Agricultural Assistance Direct Options */}
+                    {isBot && index === 0 && (
+                      <div className="mt-3.5 pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                        <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 font-kannada flex items-center justify-between">
+                          <span>{language === 'kn' ? 'ನೇರ ಆಯ್ಕೆಗಳು (ಕೇಳಲು/ಆರಿಸಲು ಒತ್ತಿರಿ):' : 'Direct Assistance Options:'}</span>
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold font-kannada">೧೦ ಕೃಷಿ ಸೇವೆಗಳು</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                          {assistanceOptions10.map((opt) => {
+                            const IconComp = opt.icon;
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => handleSend(opt.kn)}
+                                className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/90 hover:bg-emerald-50 dark:hover:bg-emerald-950/80 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition text-left group shadow-sm"
+                              >
+                                <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition">
+                                  <IconComp className="w-3.5 h-3.5" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-xs font-bold text-slate-800 dark:text-slate-100 font-kannada truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                                    {opt.id}. {opt.kn}
+                                  </div>
+                                  <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                                    {opt.descKn}
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Bot Spoken Audio Controls (Play / Pause / Stop / Replay) */}
-                    {isBot && msg.audio_url && (
+                    {isBot && (
                       <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center gap-3">
                         {isCurrentlyPlaying ? (
                           <div className="flex items-center gap-2">
@@ -1092,7 +1274,7 @@ export const VoiceAssistantPage: React.FC = () => {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => playAudio(msg.audio_url!, msg.id || index)}
+                            onClick={() => playAudio(msg.audio_url || '', msg.id || index, msg.text_kn || msg.text)}
                             className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
                           >
                             <Volume2 className="w-3.5 h-3.5" />

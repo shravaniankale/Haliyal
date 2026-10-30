@@ -334,21 +334,23 @@ class AgriculturalConversationalAgent:
 
     @classmethod
     def get_first_missing_stage(cls, profile_dict: Dict[str, Any]) -> str:
-        """Finds the first unconfirmed question in the collection sequence."""
+        """Finds the first unconfirmed question in the collection sequence (District -> Taluk -> Land Size -> Ownership -> Category -> Crop -> Irrigation -> Soil)."""
         if not profile_dict.get("district"):
             return STAGE_COLLECT_DISTRICT
         if not profile_dict.get("taluk"):
             return STAGE_COLLECT_TALUKA
-        if profile_dict.get("land_acres") is None:
+        if profile_dict.get("land_acres") is None and profile_dict.get("land_size") is None:
             return STAGE_COLLECT_LAND_SIZE
-        if not profile_dict.get("land_ownership"):
+        if not profile_dict.get("land_ownership") and not profile_dict.get("ownership_type"):
             return STAGE_COLLECT_OWNERSHIP
         if not profile_dict.get("farmer_category"):
             return STAGE_COLLECT_FARMER_CATEGORY
         if not profile_dict.get("crop") and not profile_dict.get("primary_crop"):
             return STAGE_COLLECT_CROPS
-        if not profile_dict.get("irrigation"):
+        if not profile_dict.get("irrigation") and not profile_dict.get("irrigation_type"):
             return STAGE_COLLECT_IRRIGATION
+        if not profile_dict.get("soil_type"):
+            return STAGE_COLLECT_SOIL
         return STAGE_CONFIRM_PROFILE
 
     @classmethod
@@ -358,7 +360,7 @@ class AgriculturalConversationalAgent:
         farmer_name_en = context.get("username") or context.get("name") or "Farmer"
 
         if stage == STAGE_COLLECT_DISTRICT:
-            kn = "ನೀವು ಯಾವ ಜಿಲ್ಲೆಯ ರೈತರು? (ಉದಾಹರಣೆಗೆ ಬೆಳಗಾವಿ, ಧಾರವಾಡ, ಮೈಸೂರು)"
+            kn = "ಮೊದಲು ನಿಮ್ಮ ಜಿಲ್ಲೆ ಯಾವುದು? (ಉದಾಹರಣೆಗೆ ಬೆಳಗಾವಿ, ಧಾರವಾಡ, ಮೈಸೂರು)"
             en = "Which district in Karnataka are you from? (e.g. Belagavi, Dharwad, Mysuru)"
         elif stage == STAGE_COLLECT_TALUKA:
             dist = context.get("district", "ಕರ್ನಾಟಕ")
@@ -372,23 +374,23 @@ class AgriculturalConversationalAgent:
             en = "How many acres of farmland do you have in total? (e.g. 3 acres or 1.5 hectares)"
         elif stage == STAGE_COLLECT_OWNERSHIP:
             land = context.get("land_acres", "ನಿಮ್ಮ")
-            kn = f"{land} ಎಕರೆ ಜಮೀನು ದಾಖಲಿಸಲಾಗಿದೆ. ಜಮೀನು ನಿಮ್ಮ ಸ್ವಂತದ್ದೇ ಅಥವಾ ಗುತ್ತಿಗೆಗೆ ತೆಗೆದುಕೊಂಡಿದ್ದೀರಾ? (ಸ್ವಂತ / ಗುತ್ತಿಗೆ / ಪಾಲುದಾರಿಕೆ)"
+            kn = "ನೀವು ಸ್ವಂತ ಜಮೀನಿನಲ್ಲಿ ಕೃಷಿ ಮಾಡುತ್ತಿದ್ದೀರಾ ಅಥವಾ ಬಾಡಿಗೆ ಜಮೀನಿನಲ್ಲಿ ಕೃಷಿ ಮಾಡುತ್ತಿದ್ದೀರಾ?"
             en = f"{land} acres recorded. Is the land owned by you or taken on lease/tenancy? (Owned / Leased / Shared)"
         elif stage == STAGE_COLLECT_FARMER_CATEGORY:
-            kn = "ನೀವು ಸಣ್ಣ ರೈತರಾ, ಅತಿ ಸಣ್ಣ ರೈತರಾ ಅಥವಾ ಬೇರೆ ರೈತ ವರ್ಗಕ್ಕೆ ಸೇರಿದ್ದೀರಾ? (ತಿಳಿಯದಿದ್ದರೆ 'ಗೊತ್ತಿಲ್ಲ' ಎಂದು ಹೇಳಿ)"
+            kn = "ನೀವು ಯಾವ ವರ್ಗಕ್ಕೆ ಸೇರಿದ್ದೀರಿ? ಸಾಮಾನ್ಯ, ಪರಿಶಿಷ್ಟ ಜಾತಿ, ಪರಿಶಿಷ್ಟ ಪಂಗಡ ಅಥವಾ ಇತರೆ ವರ್ಗವೇ?"
             en = "Do you belong to marginal, small, or another farmer category? (Say 'not sure' if unknown)"
         elif stage == STAGE_COLLECT_CROPS:
-            kn = "ನೀವು ಮುಖ್ಯವಾಗಿ ಯಾವ ಬೆಳೆ ಬೆಳೆಯುತ್ತಿದ್ದೀರಿ? (ಉದಾಹರಣೆಗೆ ಭತ್ತ, ಶೇಂಗಾ, ಜೋಳ, ರಾಗಿ, ಕಬ್ಬು)"
+            kn = "ನೀವು ಪ್ರಸ್ತುತ ಯಾವ ಬೆಳೆ ಬೆಳೆಯುತ್ತಿದ್ದೀರಿ? (ಮತ್ತು ನಿಮ್ಮ ಬಳಿ ಒಟ್ಟು ಎಷ್ಟು ಎಕರೆ ಜಮೀನು ಇದೆ?)"
             en = "What is your primary crop? (e.g. Paddy, Groundnut, Jowar, Ragi, Sugarcane)"
         elif stage == STAGE_COLLECT_OTHER_CROPS:
             crop = context.get("crop") or context.get("primary_crop", "ಮುಖ್ಯ ಬೆಳೆ")
             kn = f"ಮುಖ್ಯ ಬೆಳೆ '{crop}' ದಾಖಲಿಸಲಾಗಿದೆ. ಇದರ ಜೊತೆಗೆ ಬೇರೆ ಯಾವ ಬೆಳೆಗಳನ್ನು ಬೆಳೆಯುತ್ತಿದ್ದೀರಿ? (ಇಲ್ಲದಿದ್ದರೆ 'ಯಾವುದೂ ಇಲ್ಲ' ಎಂದು ಹೇಳಿ)"
             en = f"Primary crop '{crop}' recorded. Are you growing any other crops alongside this? (Say 'none' if only this crop)"
         elif stage == STAGE_COLLECT_IRRIGATION:
-            kn = "ನಿಮ್ಮ ಜಮೀನಿಗೆ ಯಾವ ರೀತಿಯ ನೀರಾವರಿ ಸೌಲಭ್ಯವಿದೆ? (ಕೊಳವೆಬಾವಿ, ಕಾಲುವೆ, ಮಳೆಯಾಶ್ರಿತ, ಹನಿ ನೀರಾವರಿ)"
+            kn = "ನಿಮ್ಮ ಜಮೀನಿಗೆ ನೀರಾವರಿ ಸೌಲಭ್ಯ ಇದೆಯೇ? ಬೋರ್ವೆಲ್, ಬಾವಿ, ಕಾಲುವೆ ಅಥವಾ ಮಳೆಯ ನೀರನ್ನು ಅವಲಂಬಿಸಿದ್ದೀರಾ?"
             en = "What irrigation facility is available on your farm? (Borewell, Canal, Rainfed, Drip irrigation)"
         elif stage == STAGE_COLLECT_SOIL:
-            kn = "ನಿಮ್ಮ ಜಮೀನಿನ ಮಣ್ಣು ಯಾವ ರೀತಿಯದು? (ಕಪ್ಪು ಮಣ್ಣು, ಕೆಂಪು ಮಣ್ಣು, ಗೋಡು ಮಣ್ಣು - ತಿಳಿಯದಿದ್ದರೆ 'ಗೊತ್ತಿಲ್ಲ' ಎಂದು ಹೇಳಿ)"
+            kn = "ನಿಮ್ಮ ಜಮೀನಿನ ಮಣ್ಣು ಯಾವ ರೀತಿಯದು? ಕಪ್ಪು ಮಣ್ಣು, ಕೆಂಪು ಮಣ್ಣು ಅಥವಾ ಬೇರೆ ರೀತಿಯ ಮಣ್ಣೇ?"
             en = "What type of soil do you have in your farmland? (Black soil, Red soil, Loamy soil - say 'not sure' if unknown)"
         elif stage == STAGE_COLLECT_SEASON_AND_CROP_STAGE:
             kn = "ಬಿತ್ತನೆ ಮಾಡಿದ ದಿನಾಂಕ ಅಥವಾ ತಿಂಗಳು ಮತ್ತು ಪ್ರಸ್ತುತ ಬೆಳೆಯ ಬೆಳವಣಿಗೆಯ ಹಂತ ಯಾವುದು? (ಉದಾ. ಜೂನ್‌ನಲ್ಲಿ ಬಿತ್ತನೆ, ಈಗ ಹೂವಾಡುವ ಹಂತ)"
@@ -588,6 +590,41 @@ class AgriculturalConversationalAgent:
             reply_en = "Sure, which detail would you like to update? (District, Taluka, Land acres, Crop, or Irrigation?)"
             reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
             return reply_en, reply_kn, STAGE_COLLECT_CORRECTION, details, [], [], None, None, True, "Profile Correction"
+
+        # Check if farmer is selecting assistance before onboarding
+        user_clean = user_message.strip()
+        assistance_chosen = None
+        if user_clean in ["೧", "1", "ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು", "ಸರ್ಕಾರಿ ಯೋಜನೆ"] or any(k in user_clean for k in ["ಸರ್ಕಾರಿ ಯೋಜನೆಗಳ", "ಯೋಜನೆಗಳ ಬಗ್ಗೆ", "ಯೋಜನೆ ಮಾಹಿತಿ", "ಯೋಜನೆ ತಿಳಿಸಿ", "ಯೋಜನೆ ಬಗ್ಗೆ"]) or ("ಯೋಜನೆ" in user_clean and any(k in user_clean for k in ["ಮಾಹಿತಿ", "ತಿಳಿದುಕೊಳ್ಳಬೇಕು", "ತಿಳಿಯಬೇಕು", "ಬೇಕು", "ಹೇಳಿ"])):
+            if not any(k in user_clean for k in ["ಎಷ್ಟು ಹಣ", "ಅರ್ಜಿ ಹೇಗೆ", "ಸಿಗುತ್ತದೆ"]):
+                assistance_chosen = ("government_schemes", "ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು", "Government Schemes")
+        elif user_clean in ["೨", "2", "ಬೆಳೆ ವಿಮೆ"] or any(k in user_clean for k in ["ಬೆಳೆ ವಿಮೆಯ", "ವಿಮೆ ಮಾಡಿಸಬೇಕು", "ವಿಮೆ ಬೇಕು", "ವಿಮೆ ಮಾಹಿತಿ", "ವಿಮೆ ಬಗ್ಗೆ"]):
+            if not any(k in user_clean for k in ["೭೨", "72", "ಕ್ಲೇಮ್", "ನಷ್ಟ ಪರಿಹಾರ"]):
+                assistance_chosen = ("crop_insurance", "ಬೆಳೆ ವಿಮೆ", "Crop Insurance")
+        elif user_clean in ["೩", "3", "ಗೊಬ್ಬರ ಸಲಹೆ", "ಗೊಬ್ಬರದ ಸಲಹೆ"] or any(k in user_clean for k in ["ಗೊಬ್ಬರದ ಮಾಹಿತಿ", "ಗೊಬ್ಬರ ಬೇಕು", "ಗೊಬ್ಬರ ಸಲಹೆ", "ಗೊಬ್ಬರ ಮಾಹಿತಿ"]):
+            if not any(k in user_clean for k in ["ಎಷ್ಟು ಕೆಜಿ", "ಎಷ್ಟು ಯೂರಿಯಾ", "ಪ್ರಮಾಣ"]):
+                assistance_chosen = ("fertilizer", "ಗೊಬ್ಬರ ಸಲಹೆ", "Fertilizer Recommendations")
+        elif user_clean in ["೪", "4", "ಬೆಳೆ ಮಾರ್ಗದರ್ಶನ"] or any(k in user_clean for k in ["ಬೆಳೆ ಮಾರ್ಗದರ್ಶನ", "ಬೆಳೆ ಮಾಹಿತಿ", "ಸಾಗುವಳಿ"]):
+            assistance_chosen = ("crop_guidance", "ಬೆಳೆ ಮಾರ್ಗದರ್ಶನ", "Crop Guidance")
+        elif user_clean in ["೫", "5", "ನೀರಾವರಿ ಸಲಹೆ"] or any(k in user_clean for k in ["ನೀರಾವರಿ ಸಲಹೆ", "ನೀರಾವರಿ ಮಾಹಿತಿ"]):
+            assistance_chosen = ("irrigation", "ನೀರಾವರಿ ಸಲಹೆ", "Irrigation Guidance")
+        elif user_clean in ["೬", "6", "ಹವಾಮಾನ ಮಾಹಿತಿ"] or any(k in user_clean for k in ["ಹವಾಮಾನ ಮಾಹಿತಿ"]):
+            assistance_chosen = ("weather", "ಹವಾಮಾನ ಮಾಹಿತಿ", "Weather Information")
+        elif user_clean in ["೭", "7", "ಕೀಟ ಮತ್ತು ರೋಗ ನಿರ್ವಹಣೆ", "ಕೀಟ ಮತ್ತು ರೋಗ"] or any(k in user_clean for k in ["ಕೀಟ ನಿರ್ವಹಣೆ", "ರೋಗ ನಿರ್ವಹಣೆ"]):
+            assistance_chosen = ("pest_disease", "ಕೀಟ ಮತ್ತು ರೋಗ ನಿರ್ವಹಣೆ", "Pest & Disease Management")
+        elif user_clean in ["೮", "8", "ಕೃಷಿ ಸಾಲಗಳು", "ಕೃಷಿ ಸಾಲ"] or any(k in user_clean for k in ["ಕೃಷಿ ಸಾಲಗಳ", "ಸಾಲ ಮಾಹಿತಿ"]):
+            assistance_chosen = ("loans", "ಕೃಷಿ ಸಾಲಗಳು", "Agricultural Loans")
+        elif user_clean in ["೯", "9", "ಮಾರುಕಟ್ಟೆ ದರ"] or any(k in user_clean for k in ["ಮಾರುಕಟ್ಟೆ ದರ", "ಮಂಡಿ ದರ"]):
+            assistance_chosen = ("market_prices", "ಮಾರುಕಟ್ಟೆ ದರ", "Market Prices")
+        elif user_clean in ["೧೦", "10", "ಸಂಪೂರ್ಣ ಕೃಷಿ ನೆರವು"] or any(k in user_clean for k in ["ಸಂಪೂರ್ಣ ಕೃಷಿ ನೆರವು", "ಸಮಗ್ರ ನೆರವು"]):
+            assistance_chosen = ("complete_assistance", "ಸಂಪೂರ್ಣ ಕೃಷಿ ನೆರವು", "Complete Agricultural Assistance")
+
+        if assistance_chosen and not details.get("district"):
+            int_code, top_kn, top_en = assistance_chosen
+            details["requested_assistance"] = int_code
+            reply_kn = f"ಖಂಡಿತ, {top_kn} ಮಾಹಿತಿಯನ್ನು ನೀಡುತ್ತೇನೆ. ಇದಕ್ಕಾಗಿ ನಿಮ್ಮ ಕೃಷಿ ವಿವರಗಳು ಬೇಕಾಗುತ್ತವೆ. ಮೊದಲು ನಿಮ್ಮ ಜಿಲ್ಲೆ ಯಾವುದು?"
+            reply_en = f"Sure, I will assist you with {top_en}. To provide tailored guidance, I will ask a few quick farm questions. First, which is your district?"
+            reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+            return reply_en, reply_kn, STAGE_COLLECT_DISTRICT, details, [], [], None, None, True, top_kn
 
         # Explicit Government Schemes request (e.g. Test 8)
         if any(w in user_lower or w in user_message for w in ["pm-kisan", "pm kisan", "krishi bhagya", "ಪಿಎಂ ಕಿಸಾನ್", "ಕೃಷಿ ಭಾಗ್ಯ", "ಸಹಾಯಧನ", "subsidy"]) or \

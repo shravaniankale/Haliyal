@@ -545,13 +545,31 @@ def start_new_conversation(
         current_stage = missing_stage
         q_kn, q_en = AgriculturalConversationalAgent.get_question_for_stage(missing_stage, saved_details, reg_style)
 
+        if missing_stage == "COLLECT_DISTRICT" or not saved_details.get("district"):
+            step_prompt_kn = "ಮೊದಲು ನಿಮ್ಮ ಜಿಲ್ಲೆ ಯಾವುದು ತಿಳಿಸಿ ಅಥವಾ ನಿಮಗೆ ಬೇಕಾದ ಕೃಷಿ ಸಹಾಯವನ್ನು ನೇರವಾಗಿ ಹೇಳಿ."
+            step_prompt_en = "First, which district in Karnataka are you farming in, or speak your requirement."
+        else:
+            step_prompt_kn = q_kn
+            step_prompt_en = q_en
+
         greeting_kn = (
-            f"ನಮಸ್ಕಾರ {farmer_name} ಅವರೇ! ಕೃಷಿ ಮಿತ್ರಕ್ಕೆ ಸ್ವಾಗತ. ನಿಮ್ಮ ಕೃಷಿಗೆ ಸಂಬಂಧಿಸಿದ ಮಾಹಿತಿಯನ್ನು ತಿಳಿದುಕೊಳ್ಳಲು ಕೆಲವು ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳುತ್ತೇನೆ. ಈ ಮಾಹಿತಿಯು ನಿಮಗೆ ಸೂಕ್ತವಾದ ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು, ಬೆಳೆ ವಿಮೆ ಮತ್ತು ಕೃಷಿ ಸಲಹೆಗಳನ್ನು ಶಿಫಾರಸು ಮಾಡಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ.\n\n"
-            f"{q_kn}"
+            f"ನಮಸ್ಕಾರ {farmer_name} ಅವರೇ! ಕೃಷಿ ಮಿತ್ರಕ್ಕೆ ಸ್ವಾಗತ. ನಿಮಗೆ ಇಂದು ಯಾವ ಕೃಷಿ ಸಹಾಯ ಬೇಕಾಗಿದೆ?\n\n"
+            f"ನಿಮಗೆ ಯಾವ ರೀತಿಯ ಕೃಷಿ ಸಹಾಯ ಬೇಕು? ನಿಮ್ಮ ಮಾತಿನಲ್ಲಿ ಹೇಳಬಹುದು ಅಥವಾ ಕೆಳಗಿನ ಆಯ್ಕೆಗಳಲ್ಲಿ ಒಂದನ್ನು ಆರಿಸಬಹುದು:\n\n"
+            f"೧. ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು (Government Schemes)\n"
+            f"೨. ಬೆಳೆ ವಿಮೆ (Crop Insurance)\n"
+            f"೩. ಗೊಬ್ಬರ ಸಲಹೆ (Fertilizer Recommendations)\n"
+            f"೪. ಬೆಳೆ ಮಾರ್ಗದರ್ಶನ (Crop Guidance)\n"
+            f"೫. ನೀರಾವರಿ ಸಲಹೆ (Irrigation Advisory)\n"
+            f"೬. ಹವಾಮಾನ ಮಾಹಿತಿ (Weather Information)\n"
+            f"೭. ಕೀಟ ಮತ್ತು ರೋಗ ನಿರ್ವಹಣೆ (Pest & Disease Management)\n"
+            f"೮. ಕೃಷಿ ಸಾಲಗಳು (Agricultural Loans)\n"
+            f"೯. ಮಾರುಕಟ್ಟೆ ದರ (Market Prices)\n"
+            f"೧೦. ಸಂಪೂರ್ಣ ಕೃಷಿ ನೆರವು (Complete Assistance)\n\n"
+            f"{step_prompt_kn}"
         )
         greeting_en = (
-            f"Hello {farmer_name_en}! Welcome to Krishi Mitra. I will ask a few questions to understand your agricultural information. These details will help provide suitable agricultural recommendations.\n\n"
-            f"{q_en}"
+            f"Hello {farmer_name_en}! Welcome to Krishi Mitra. What agricultural assistance do you need today?\n\n"
+            f"1. Government schemes\n2. Crop insurance\n3. Fertilizer recommendations\n4. Crop guidance\n5. Irrigation guidance\n6. Weather information\n7. Pest & disease management\n8. Agricultural loans\n9. Market prices\n10. Complete agricultural assistance\n\n{step_prompt_en}"
         )
 
     greeting_kn = KannadaVocabularyService.adapt_to_dialect(greeting_kn, reg_style)
@@ -563,7 +581,10 @@ def start_new_conversation(
     # Speech synthesis for the opening greeting
     auto_voice = getattr(current_user, "auto_voice_response", True) if current_user else True
     speed = getattr(current_user, "speech_speed", 1.0) if current_user else 1.0
-    spoken_text = greeting_kn if lang == "kn" else greeting_en
+    spoken_text = (
+        f"ನಮಸ್ಕಾರ {farmer_name} ಅವರೇ! ಕೃಷಿ ಮಿತ್ರಕ್ಕೆ ಸ್ವಾಗತ. ನಿಮಗೆ ಇಂದು ಯಾವ ಕೃಷಿ ಸಹಾಯ ಬೇಕಾಗಿದೆ? ನಿಮ್ಮ ಮಾತಿನಲ್ಲಿ ಹೇಳಬಹುದು ಅಥವಾ ಕೆಳಗಿನ ಆಯ್ಕೆಗಳಲ್ಲಿ ಒಂದನ್ನು ಆರಿಸಬಹುದು."
+        if lang == "kn" else f"Hello {farmer_name_en}! Welcome to Krishi Mitra. What agricultural assistance do you need today?"
+    )
     audio_url = None
     if auto_voice:
         audio_url, _ = KannadaSpeechService.synthesize_kannada_speech(

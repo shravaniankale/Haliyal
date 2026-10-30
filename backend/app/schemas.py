@@ -261,6 +261,7 @@ class ChatResponse(BaseModel):
     current_stage: Optional[str] = None
     confirmed_details: Optional[Dict[str, Any]] = None
     missing_details: Optional[List[str]] = None
+    profile_updated: Optional[bool] = True
 
 # --- Conversation & History Schemas ---
 class ChatMessageItem(BaseModel):

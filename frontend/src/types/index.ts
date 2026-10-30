@@ -35,6 +35,8 @@ export interface FarmerProfile {
   soil_type?: string;
   crop_stage?: string;
   sowing_date?: string;
+  agricultural_season?: string;
+  season?: string;
   theme_preference?: 'light' | 'dark';
   voice_gender_preference?: 'female' | 'male';
   voice_assistant_enabled?: boolean;

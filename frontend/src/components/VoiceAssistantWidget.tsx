@@ -117,9 +117,55 @@ export const VoiceAssistantWidget: React.FC = () => {
     };
   }, []);
 
-  // Play audio automatically
-  const playKannadaAudio = (audioUrl: string) => {
-    if (isAudioMuted || !audioUrl) {
+  const speakWithWebSpeech = (text: string, onEnd?: () => void) => {
+    if (!('speechSynthesis' in window)) {
+      if (onEnd) onEnd();
+      return;
+    }
+    try {
+      window.speechSynthesis.cancel();
+      const cleanText = text.replace(/[*#_~`]/g, '');
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = language === 'kn' ? 'kn-IN' : 'en-IN';
+      utterance.rate = speechSpeed || 1.0;
+      const voices = window.speechSynthesis.getVoices();
+      const knVoice = voices.find(
+        (v) => v.lang.includes('kn') || v.lang.toLowerCase().includes('kannada')
+      );
+      if (knVoice) {
+        utterance.voice = knVoice;
+      }
+      utterance.onend = () => {
+        setConvState('idle');
+        if (onEnd) onEnd();
+      };
+      utterance.onerror = () => {
+        setConvState('idle');
+        if (onEnd) onEnd();
+      };
+      setConvState('speaking');
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      setConvState('idle');
+      if (onEnd) onEnd();
+    }
+  };
+
+  const startListeningAuto = () => {
+    if (!voiceInputEnabled || !recognitionRef.current) return;
+    try {
+      recognitionRef.current.lang = language === 'en' ? 'en-IN' : 'kn-IN';
+      recognitionRef.current.start();
+      setConvState('listening');
+    } catch (err) {
+      console.warn('Auto start listening error:', err);
+      setConvState('idle');
+    }
+  };
+
+  // Play audio automatically with Web Speech fallback and listening handshake
+  const playKannadaAudio = (audioUrl: string, fallbackText?: string) => {
+    if (isAudioMuted) {
       setConvState('idle');
       return;
     }
@@ -129,25 +175,65 @@ export const VoiceAssistantWidget: React.FC = () => {
       audioRef.current = null;
     }
 
-    const audio = new Audio(audioUrl);
-    audio.playbackRate = speechSpeed || 1.0;
-    audioRef.current = audio;
+    if (!audioUrl) {
+      if (fallbackText) {
+        speakWithWebSpeech(fallbackText, () => {
+          if (voiceInputEnabled && autoVoiceResponse) {
+            setTimeout(startListeningAuto, 300);
+          }
+        });
+      } else {
+        setConvState('idle');
+      }
+      return;
+    }
 
-    setConvState('speaking');
+    try {
+      const audio = new Audio(audioUrl);
+      audio.playbackRate = speechSpeed || 1.0;
+      audioRef.current = audio;
 
-    audio.onended = () => {
-      setConvState('idle');
-    };
+      setConvState('speaking');
 
-    audio.onerror = (e) => {
-      console.warn('Audio playback error:', e);
-      setConvState('idle');
-    };
+      audio.onended = () => {
+        setConvState('idle');
+        if (voiceInputEnabled && autoVoiceResponse) {
+          setTimeout(startListeningAuto, 300);
+        }
+      };
 
-    audio.play().catch((err) => {
-      console.warn('Auto-play blocked or failed:', err);
-      setConvState('idle');
-    });
+      audio.onerror = (e) => {
+        console.warn('Audio playback error, falling back to Web Speech Synthesis:', e);
+        if (fallbackText) {
+          speakWithWebSpeech(fallbackText, () => {
+            if (voiceInputEnabled && autoVoiceResponse) {
+              setTimeout(startListeningAuto, 300);
+            }
+          });
+        } else {
+          setConvState('idle');
+        }
+      };
+
+      audio.play().catch((err) => {
+        console.warn('Auto-play blocked or failed, falling back to Web Speech Synthesis:', err);
+        if (fallbackText) {
+          speakWithWebSpeech(fallbackText, () => {
+            if (voiceInputEnabled && autoVoiceResponse) {
+              setTimeout(startListeningAuto, 300);
+            }
+          });
+        } else {
+          setConvState('idle');
+        }
+      });
+    } catch (e) {
+      if (fallbackText) {
+        speakWithWebSpeech(fallbackText);
+      } else {
+        setConvState('idle');
+      }
+    }
   };
 
   // Interrupt speaking
@@ -242,8 +328,8 @@ export const VoiceAssistantWidget: React.FC = () => {
       setMessages((prev) => [...prev, botMsg]);
 
       // Automatic Two-Way Audio Playback (respecting autoVoiceResponse)
-      if (response.audio_url && !isAudioMuted && autoVoiceResponse) {
-        playKannadaAudio(response.audio_url);
+      if (!isAudioMuted && autoVoiceResponse) {
+        playKannadaAudio(response.audio_url || '', response.reply_kn || response.reply);
       } else {
         setConvState('idle');
       }
@@ -267,7 +353,15 @@ export const VoiceAssistantWidget: React.FC = () => {
           </div>
 
           <button
-            onClick={() => setIsOpen(true)}
+            onClick={() => {
+              setIsOpen(true);
+              if (messages.length > 0 && !isAudioMuted && autoVoiceResponse) {
+                const last = [...messages].reverse().find(m => m.sender === 'assistant');
+                if (last) {
+                  playKannadaAudio(last.audio_url || '', last.text_kn || last.text);
+                }
+              }
+            }}
             className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#174C36] via-[#2F7650] to-[#75A96A] text-white flex items-center justify-center shadow-2xl hover:scale-110 transition-transform relative group border-2 border-[#D8AA48]"
             title="Open Krishi Mitra AI Assistant"
           >
