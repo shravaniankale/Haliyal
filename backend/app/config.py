@@ -9,7 +9,17 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 # Base Paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AUDIO_DIR = os.path.join(BASE_DIR, "static_audio")
+DATA_DIR = os.path.join(BASE_DIR, "data")
+SCHEME_DOCS_DIR = os.path.join(BASE_DIR, "scheme_documents")
+CHROMA_PERSIST_DIR = os.path.join(BASE_DIR, "chroma_db")
+
 os.makedirs(AUDIO_DIR, exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(SCHEME_DOCS_DIR, exist_ok=True)
+os.makedirs(CHROMA_PERSIST_DIR, exist_ok=True)
+
+# LLM / Gemini Configuration
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # 31 Karnataka Districts Configuration with Regional Mapping and Coordinates
 KARNATAKA_DISTRICTS: Dict[str, Dict[str, Any]] = {
@@ -46,15 +56,15 @@ KARNATAKA_DISTRICTS: Dict[str, Dict[str, Any]] = {
     # Coastal & Malnad Karnataka (ಕರಾವಳಿ / ಮಲೆನಾಡು)
     "Dakshina Kannada": {"kn": "ದಕ್ಷಿಣ ಕನ್ನಡ", "region": "Coastal Karnataka", "lat": 12.8703, "lon": 74.8806, "apmc": "Mangalore"},
     "Udupi": {"kn": "ಉಡುಪಿ", "region": "Coastal Karnataka", "lat": 13.3409, "lon": 74.7421, "apmc": "Udupi"},
-    "Uttara Kannada": {"kn": "ಉತ್ತರ ಕನ್ನಡ", "region": "Coastal Karnataka", "lat": 14.8185, "lon": 74.1416, "apmc": "Sirsi"},
-    "Kodagu": {"kn": "ಕೊಡಗು", "region": "South Karnataka", "lat": 12.3375, "lon": 75.8069, "apmc": "Madikeri"},
-    "Chikkamagaluru": {"kn": "ಚಿಕ್ಕಮಗಳೂರು", "region": "South Karnataka", "lat": 13.3153, "lon": 75.7754, "apmc": "Chikmagalur"},
+    "Uttara Kannada": {"kn": "ಉತ್ತರ ಕನ್ನಡ", "region": "Coastal Karnataka", "lat": 14.8185, "lon": 74.1303, "apmc": "Sirsi"},
+    "Kodagu": {"kn": "ಕೊಡಗು", "region": "Malnad Karnataka", "lat": 12.4244, "lon": 75.7382, "apmc": "Madikeri"},
+    "Chikkamagaluru": {"kn": "ಚಿಕ್ಕಮಗಳೂರು", "region": "Malnad Karnataka", "lat": 13.3161, "lon": 75.7720, "apmc": "Chikmagalur"},
 }
 
 def get_region_for_district(district_name: str) -> str:
-    """Returns the regional classification for a Karnataka district."""
+    """Helper returning regional grouping for a given Karnataka district."""
     normalized = district_name.strip().title()
-    for d, info in KARNATAKA_DISTRICTS.items():
-        if d.lower() == normalized.lower():
-            return info["region"]
-    return "South Karnataka"
+    for name, data in KARNATAKA_DISTRICTS.items():
+        if name.lower() == normalized.lower():
+            return data["region"]
+    return "Standard Kannada"

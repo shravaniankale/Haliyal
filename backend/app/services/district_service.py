@@ -1,4 +1,4 @@
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 from ..config import KARNATAKA_DISTRICTS, get_region_for_district
 
 # Comprehensive Karnataka Taluk mapping per district
@@ -39,6 +39,72 @@ DISTRICT_TALUKS: Dict[str, List[str]] = {
     "Dakshina Kannada": ["Mangaluru", "Bantwal", "Belthangady", "Puttur", "Sullia", "Moodbidri", "Kadaba"],
     "Udupi": ["Udupi", "Kundapura", "Karkala", "Byndoor", "Brahmavara", "Kaup", "Hebri"],
     "Uttara Kannada": ["Karwar", "Ankola", "Kumta", "Honnavar", "Bhatkal", "Sirsi", "Siddapur", "Yellapur", "Mundgod", "Haliyal", "Joida"],
+}
+
+# Kannada Taluk name to (English Taluk, District) mapping
+TALUKS_KN_TO_EN: Dict[str, Tuple[str, str]] = {
+    # Belagavi
+    "ಬೆಳಗಾವಿ": ("Belagavi", "Belagavi"),
+    "ಬೈಲಹೊಂಗಲ": ("Bailhongal", "Belagavi"),
+    "ಚಿಕ್ಕೋಡಿ": ("Chikkodi", "Belagavi"),
+    "ಗೋಕಾಕ": ("Gokak", "Belagavi"),
+    "ಗೋಕಾಕ್": ("Gokak", "Belagavi"),
+    "ಹುಕ್ಕೇರಿ": ("Hukkeri", "Belagavi"),
+    "ಖಾನಾಪುರ": ("Khanapur", "Belagavi"),
+    "ರಾಮದುರ್ಗ": ("Ramdurg", "Belagavi"),
+    "ರಾಯಬಾಗ": ("Raybag", "Belagavi"),
+    "ಸವದತ್ತಿ": ("Saundatti", "Belagavi"),
+    "ಸವದತ್ತಿ-ಯಲ್ಲಮ್ಮ": ("Saundatti", "Belagavi"),
+    "ಅಥಣಿ": ("Athani", "Belagavi"),
+    "ಕಾಗವಾಡ": ("Kagwad", "Belagavi"),
+    "ಮೂಡಲಗಿ": ("Mudalagi", "Belagavi"),
+    "ಕಿತ್ತೂರು": ("Kittur", "Belagavi"),
+    "ನಿಪ್ಪಾಣಿ": ("Nipani", "Belagavi"),
+    # Dharwad
+    "ಧಾರವಾಡ": ("Dharwad", "Dharwad"),
+    "ಹುಬ್ಬಳ್ಳಿ": ("Hubballi Urban", "Dharwad"),
+    "ಕುಂದಗೋಳ": ("Kundgol", "Dharwad"),
+    "ನವಲಗುಂದ": ("Navalgund", "Dharwad"),
+    "ಕಲಘಟಗಿ": ("Kalghatgi", "Dharwad"),
+    "ಅಳ್ನಾವರ": ("Alnavar", "Dharwad"),
+    "ಅಣ್ಣಿಗೇರಿ": ("Annigeri", "Dharwad"),
+    # Uttara Kannada
+    "ಹಳಿಯಾಳ": ("Haliyal", "Uttara Kannada"),
+    "ಕಾರವಾರ": ("Karwar", "Uttara Kannada"),
+    "ಶಿರಸಿ": ("Sirsi", "Uttara Kannada"),
+    "ದಾಂಡೇಲಿ": ("Dandeli", "Uttara Kannada"),
+    # Bagalkote
+    "ಬಾಗಲಕೋಟೆ": ("Bagalkote", "Bagalkote"),
+    "ಬಾದಾಮಿ": ("Badami", "Bagalkote"),
+    "ಜಮಖಂಡಿ": ("Jamkhandi", "Bagalkote"),
+    "ಮುಧೋಳ": ("Mudhol", "Bagalkote"),
+    # Vijayapura
+    "ವಿಜಯಪುರ": ("Vijayapura", "Vijayapura"),
+    "ಇಂಡಿ": ("Indi", "Vijayapura"),
+    "ಸಿಂದಗಿ": ("Sindagi", "Vijayapura"),
+    # Kalaburagi
+    "ಕಲಬುರಗಿ": ("Kalaburagi", "Kalaburagi"),
+    "ಸೇಡಂ": ("Sedam", "Kalaburagi"),
+    # Ballari
+    "ಬಳ್ಳಾರಿ": ("Ballari", "Ballari"),
+    "ಹೊಸಪೇಟೆ": ("Hosapete", "Vijayanagara"),
+    # Mysuru
+    "ಮೈಸೂರು": ("Mysuru", "Mysuru"),
+    "ಹುಣಸೂರು": ("Hunsur", "Mysuru"),
+    "ನಂಜನಗೂಡು": ("Nanjangud", "Mysuru"),
+    # Mandya
+    "ಮಂಡ್ಯ": ("Mandya", "Mandya"),
+    "ಮದ್ದೂರು": ("Maddur", "Mandya"),
+    # Hassan
+    "ಹಾಸನ": ("Hassan", "Hassan"),
+    # Shivamogga
+    "ಶಿವಮೊಗ್ಗ": ("Shivamogga", "Shivamogga"),
+    "ಸಾಗರ": ("Sagara", "Shivamogga"),
+    # Bengaluru
+    "ಬೆಂಗಳೂರು": ("Bengaluru Urban", "Bengaluru Urban"),
+    # Udupi & Dakshina Kannada
+    "ಉಡುಪಿ": ("Udupi", "Udupi"),
+    "ಮಂಗಳೂರು": ("Mangaluru", "Dakshina Kannada")
 }
 
 # Regional Kannada Vocabulary & Tone Dictionaries

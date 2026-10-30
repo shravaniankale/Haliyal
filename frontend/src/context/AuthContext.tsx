@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, FarmerProfile } from '../types';
 import { api } from '../services/api';
+import { useSettings } from './SettingsContext';
 
 interface AuthContextType {
   user: User | null;
@@ -31,6 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<FarmerProfile | null>(null);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('krishi_mitra_token'));
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const { syncFromProfile } = useSettings();
 
   const fetchUserData = async () => {
     try {
@@ -44,6 +46,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(meData.user);
       const prof = await api.getFarmerProfile();
       setProfile(prof);
+      // Synchronize centralized settings with database preferences
+      syncFromProfile(prof);
     } catch (err) {
       console.warn('Session expired or not logged in');
       localStorage.removeItem('krishi_mitra_token');
@@ -98,7 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         profile,
         token,
-        isAuthenticated: !!user,
+        isAuthenticated: !!token && !!user,
         isLoading,
         login,
         register,

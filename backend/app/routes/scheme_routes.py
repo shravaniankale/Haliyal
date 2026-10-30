@@ -44,7 +44,16 @@ def format_scheme_response(scheme: Scheme, is_saved: bool = False) -> SchemeResp
         verification_status=scheme.verification_status,
         active_status=scheme.active_status,
         image_url=scheme.image_url,
-        is_saved=is_saved
+        is_saved=is_saved,
+        scheme_code=getattr(scheme, "scheme_code", None),
+        record_type=getattr(scheme, "record_type", "real_scheme"),
+        benefit_amount=getattr(scheme, "benefit_amount", None),
+        benefit_frequency=getattr(scheme, "benefit_frequency", None),
+        benefit_type=getattr(scheme, "benefit_type", None),
+        source_document_title=getattr(scheme, "source_document_title", None),
+        source_published_date=getattr(scheme, "source_published_date", None),
+        source_last_verified=getattr(scheme, "source_last_verified", None),
+        rag_document_id=getattr(scheme, "rag_document_id", None)
     )
 
 @router.get("/stats")
@@ -81,6 +90,8 @@ def get_all_schemes(
         query = query.filter(
             (Scheme.scheme_name.ilike(search_term)) |
             (Scheme.scheme_name_kn.ilike(search_term)) |
+            (Scheme.scheme_id.ilike(search_term)) |
+            (Scheme.scheme_code.ilike(search_term)) |
             (Scheme.department.ilike(search_term))
         )
 
@@ -117,7 +128,9 @@ def get_my_saved_schemes(current_user: User = Depends(require_current_user), db:
 @router.get("/{scheme_id}", response_model=SchemeResponse)
 def get_scheme_detail(scheme_id: str, db: Session = Depends(get_db), current_user: Optional[User] = Depends(get_current_user)):
     scheme = db.query(Scheme).filter(
-        (Scheme.scheme_id == scheme_id) | (Scheme.id == int(scheme_id) if scheme_id.isdigit() else False)
+        (Scheme.scheme_id == scheme_id) | 
+        (Scheme.scheme_code == scheme_id) |
+        (Scheme.id == int(scheme_id) if scheme_id.isdigit() else False)
     ).first()
     if not scheme:
         raise HTTPException(status_code=404, detail="Scheme not found")

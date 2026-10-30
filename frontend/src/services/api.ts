@@ -6,7 +6,13 @@ import {
   Crop,
   WeatherData,
   MarketPrice,
-  ChatMessage
+  ChatMessage,
+  VoiceOption,
+  AgriculturalSeasonData,
+  CropInsuranceStatus,
+  ConversationItem,
+  ConversationDetail,
+  AnalysisHistoryItem
 } from '../types';
 
 const BASE_URL = '/api';
@@ -73,6 +79,15 @@ export const api = {
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error('Failed to update profile');
+    return res.json();
+  },
+
+  async deleteFarmerProfile(): Promise<{ status: string; message: string }> {
+    const res = await fetch(`${BASE_URL}/farmer/profile`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() },
+    });
+    if (!res.ok) throw new Error('Failed to delete profile');
     return res.json();
   },
 
@@ -164,12 +179,44 @@ export const api = {
     return res.json();
   },
 
-  // Weather & Market
-  async getWeather(district: string): Promise<WeatherData> {
-    const res = await fetch(`${BASE_URL}/weather?district=${encodeURIComponent(district)}`);
+  // Weather Intelligence
+  async getWeather(district: string, taluk?: string): Promise<WeatherData> {
+    const q = new URLSearchParams();
+    q.append('district', district);
+    if (taluk) q.append('taluk', taluk);
+    const res = await fetch(`${BASE_URL}/weather?${q.toString()}`);
     return res.json();
   },
 
+  // Agricultural Season Intelligence
+  async getAgriculturalSeason(params?: { district?: string; crop?: string; crop_stage?: string }): Promise<AgriculturalSeasonData> {
+    const q = new URLSearchParams();
+    if (params?.district) q.append('district', params.district);
+    if (params?.crop) q.append('crop', params.crop);
+    if (params?.crop_stage) q.append('crop_stage', params.crop_stage);
+    const res = await fetch(`${BASE_URL}/season?${q.toString()}`);
+    return res.json();
+  },
+
+  // Crop Insurance Intelligence (PMFBY & Samrakshane)
+  async getCropInsuranceStatus(params: {
+    district: string;
+    taluk?: string;
+    crop?: string;
+    season?: string;
+    land_acres?: number;
+  }): Promise<CropInsuranceStatus> {
+    const q = new URLSearchParams();
+    q.append('district', params.district);
+    if (params.taluk) q.append('taluk', params.taluk);
+    if (params.crop) q.append('crop', params.crop);
+    if (params.season) q.append('season', params.season);
+    if (params.land_acres !== undefined) q.append('land_acres', String(params.land_acres));
+    const res = await fetch(`${BASE_URL}/insurance/status?${q.toString()}`);
+    return res.json();
+  },
+
+  // Market Prices
   async getMarketPrices(crop?: string, district?: string): Promise<MarketPrice[]> {
     const q = new URLSearchParams();
     if (crop) q.append('crop', crop);
@@ -184,6 +231,10 @@ export const api = {
     session_id?: string;
     language?: string;
     regional_preference?: string;
+    voice_gender?: string;
+    speech_speed?: number;
+    auto_voice_response?: boolean;
+    transcript?: string;
   }) {
     const res = await fetch(`${BASE_URL}/chat`, {
       method: 'POST',
@@ -194,22 +245,93 @@ export const api = {
   },
 
   async getChatHistory(sessionId: string): Promise<ChatMessage[]> {
-    const res = await fetch(`${BASE_URL}/chat/history?session_id=${encodeURIComponent(sessionId)}`);
+    const res = await fetch(`${BASE_URL}/chat/history?session_id=${encodeURIComponent(sessionId)}`, {
+      headers: { ...getAuthHeader() }
+    });
     return res.json();
   },
 
   async clearChat(sessionId: string) {
     const res = await fetch(`${BASE_URL}/chat/clear?session_id=${encodeURIComponent(sessionId)}`, {
       method: 'POST',
+      headers: { ...getAuthHeader() }
     });
     return res.json();
   },
 
-  async synthesizeSpeech(text: string, regional_preference?: string) {
+  // Conversation History Endpoints
+  async getConversations(): Promise<ConversationItem[]> {
+    const res = await fetch(`${BASE_URL}/chat/conversations`, {
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) return [];
+    return res.json();
+  },
+
+  async getConversationDetail(convId: number): Promise<ConversationDetail> {
+    const res = await fetch(`${BASE_URL}/chat/conversations/${convId}`, {
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to load conversation');
+    return res.json();
+  },
+
+  async startNewConversation(data: {
+    title?: string;
+    topic?: string;
+    language?: string;
+    voice_gender?: string;
+  }): Promise<ConversationDetail> {
+    const res = await fetch(`${BASE_URL}/chat/conversations/new`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to start conversation');
+    return res.json();
+  },
+
+  async deleteConversation(convId: number): Promise<{ status: string; id: number }> {
+    const res = await fetch(`${BASE_URL}/chat/conversations/${convId}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
+    return res.json();
+  },
+
+  async deleteAllConversations(): Promise<{ status: string; deleted_count: number }> {
+    const res = await fetch(`${BASE_URL}/chat/conversations`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
+    return res.json();
+  },
+
+  async getUserAnalyses(): Promise<AnalysisHistoryItem[]> {
+    const res = await fetch(`${BASE_URL}/chat/analyses`, {
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) return [];
+    return res.json();
+  },
+
+  async getVoices(): Promise<VoiceOption[]> {
+    const res = await fetch(`${BASE_URL}/speech/voices`);
+    return res.json();
+  },
+
+  async previewVoice(voiceId: string = 'kn_female') {
+    const res = await fetch(`${BASE_URL}/speech/preview?voice_id=${encodeURIComponent(voiceId)}`, {
+      method: 'POST'
+    });
+    return res.json();
+  },
+
+  async synthesizeSpeech(text: string, voice_gender?: string, language?: string, speech_speed?: number) {
     const res = await fetch(`${BASE_URL}/speech/synthesize`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, regional_preference }),
+      body: JSON.stringify({ text, voice_gender, language, speech_speed }),
     });
     return res.json();
   },

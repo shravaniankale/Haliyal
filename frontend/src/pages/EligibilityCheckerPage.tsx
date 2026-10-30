@@ -23,10 +23,10 @@ export const EligibilityCheckerPage: React.FC = () => {
   const [district, setDistrict] = useState(profile?.district || 'Belagavi');
   const [crop, setCrop] = useState('Paddy');
   const [landAcres, setLandAcres] = useState<string>(profile?.land_acres ? String(profile.land_acres) : '3.0');
-  const [landOwnership, setLandOwnership] = useState<'Own' | 'Tenant'>('Own');
+  const [landOwnership, setLandOwnership] = useState<string>('Own');
   const [season, setSeason] = useState('Kharif');
-  const [irrigation, setIrrigation] = useState('Rainfed');
-  const [category, setCategory] = useState('Small & Marginal');
+  const [irrigation, setIrrigation] = useState<string>('Rainfed');
+  const [category, setCategory] = useState<string>('Small & Marginal');
 
   const [evalResult, setEvalResult] = useState<EligibilityResponse | null>(null);
   const [evaluating, setEvaluating] = useState(false);
@@ -169,11 +169,14 @@ export const EligibilityCheckerPage: React.FC = () => {
             </label>
             <select
               value={landOwnership}
-              onChange={(e) => setLandOwnership(e.target.value as any)}
+              onChange={(e) => setLandOwnership(e.target.value)}
               className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-[#E2E8DF] dark:border-[#1E382B] bg-[#F7F9F5] dark:bg-[#0B1711] text-[#19251E] dark:text-[#EDF3EF] focus:outline-none focus:border-[#2F7650]"
             >
               <option value="Own">ಸ್ವಂತ ಭೂಮಿ (Own Title Holder)</option>
               <option value="Tenant">ಗೇಣಿ ಭೂಮಿ (Tenant / Cultivator)</option>
+              <option value="Leased">ಗುತ್ತಿಗೆ ಭೂಮಿ (Leased)</option>
+              <option value="Shared">ಪಾಲುದಾರಿಕೆ (Shared)</option>
+              <option value="Other">ಇತರೆ (Other)</option>
             </select>
           </div>
 
@@ -207,6 +210,7 @@ export const EligibilityCheckerPage: React.FC = () => {
               <option value="Borewell">ಕೊಳವೆಬಾವಿ (Borewell)</option>
               <option value="Canal">ಕಾಲುವೆ ನೀರಾವರಿ (Canal)</option>
               <option value="Drip">ಹನಿ ನೀರಾವರಿ (Drip)</option>
+              <option value="Sprinkler">ತುಂತುರು ನೀರಾವರಿ (Sprinkler)</option>
             </select>
           </div>
 
@@ -224,6 +228,7 @@ export const EligibilityCheckerPage: React.FC = () => {
               <option value="General">ಸಾಮಾನ್ಯ ವರ್ಗ (General)</option>
               <option value="SC/ST">ಪರಿಶಿಷ್ಟ ಜಾತಿ / ಪಂಗಡ (SC/ST)</option>
               <option value="Women">ಮಹಿಳಾ ರೈತರು (Women Farmers)</option>
+              <option value="Not sure">ಖಚಿತವಿಲ್ಲ (Not sure)</option>
             </select>
           </div>
 

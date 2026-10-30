@@ -1,0 +1,5 @@
+file_name,purpose,key_fields,important_note
+government_schemes.csv,Structured catalogue for scheme discovery and rule-based eligibility checks,scheme_id; scheme_name; eligibility_rule_json; official_url; verification_status,Verify every real-scheme field against current official guidelines before enabling recommendations.
+regional_kannada_vocabulary.csv,Map regional expressions and local agricultural terms to standard concepts,local_term; standard_kannada_term; concept_id; district_or_region,Do not invent dialect terms. Validate with native speakers from the relevant region.
+kannada_speech_metadata.csv,Metadata index for consented audio and transcription evaluation/training,audio_file_path_or_uri; transcript_verbatim; district_or_region; consent_status,"The CSV stores metadata, not audio. Store audio securely and collect informed consent."
+farmer_session_profile.csv,Example schema for conversation-time farmer information,district; crops_grown; land_area; land_ownership; confirmed_fields; missing_fields,"This is a session/profile structure, not a public training dataset. Collect only necessary information."

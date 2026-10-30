@@ -1,353 +1,897 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User as UserIcon,
   Phone,
+  Mail,
   MapPin,
-  Sprout,
-  Mic,
+  Calendar,
   Save,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Volume2,
+  Sun,
+  Moon,
+  Mic,
+  Sliders,
+  LogOut,
+  Sparkles,
+  Play,
+  Square,
+  ShieldCheck,
+  Check,
+  Bot
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useLanguage } from '../context/LanguageContext';
+import { useSettings, RegionalDialect, VoiceGender, Theme } from '../context/SettingsContext';
 import { api } from '../services/api';
 
+interface DistrictOption {
+  name: string;
+  name_kn: string;
+  region: string;
+  taluks: string[];
+}
+
 export const FarmerProfilePage: React.FC = () => {
-  const { user, profile, refreshProfile, isAuthenticated } = useAuth();
-  const { setRegionalDialect } = useLanguage();
+  const { user, profile, refreshProfile, isAuthenticated, logout } = useAuth();
+  const {
+    theme,
+    setTheme,
+    language,
+    regionalDialect,
+    setRegionalDialect,
+    voiceGender,
+    setVoiceGender,
+    voiceAssistantEnabled,
+    setVoiceAssistantEnabled,
+    autoVoiceResponse,
+    setAutoVoiceResponse,
+    voiceInputEnabled,
+    setVoiceInputEnabled,
+    speechSpeed,
+    setSpeechSpeed,
+    t
+  } = useSettings();
   const navigate = useNavigate();
 
-  const [districts, setDistricts] = useState<any[]>([]);
-  const [name, setName] = useState('');
-  const [district, setDistrict] = useState('Belagavi');
-  const [taluk, setTaluk] = useState('Belagavi');
-  const [village, setVillage] = useState('');
-  const [landAcres, setLandAcres] = useState<string>('3.0');
-  const [landOwnership, setLandOwnership] = useState('Own');
-  const [irrigationType, setIrrigationType] = useState('Rainfed');
-  const [farmerCategory, setFarmerCategory] = useState('Small & Marginal');
-  const [selectedSpeech, setSelectedSpeech] = useState('North Karnataka');
-  const [selectedCrops, setSelectedCrops] = useState<string[]>(['Paddy']);
+  // District/Taluk data
+  const [districts, setDistricts] = useState<DistrictOption[]>([]);
+  const [availableTaluks, setAvailableTaluks] = useState<string[]>([]);
 
-  const [saving, setSaving] = useState(false);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  // Section A: Personal Details State
+  const [username, setUsername] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('Belagavi');
+  const [selectedTaluk, setSelectedTaluk] = useState('Belagavi');
+  const [accountCreatedAt, setAccountCreatedAt] = useState<string>('');
 
-  const allCrops = ['Paddy', 'Ragi', 'Jowar', 'Maize', 'Cotton', 'Groundnut', 'Tur', 'Sugarcane'];
+  // Audio Preview State
+  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
 
+  // Feedback states
+  const [personalSaving, setPersonalSaving] = useState(false);
+  const [personalSuccess, setPersonalSuccess] = useState<string | null>(null);
+  const [personalError, setPersonalError] = useState<string | null>(null);
+
+  const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
+
+  // Section C: Logout Confirmation Modal
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  // Redirect if unauthenticated
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, navigate]);
 
+  // Load districts
   useEffect(() => {
-    async function loadDistricts() {
+    async function fetchDistricts() {
       try {
         const d = await api.getDistricts();
         setDistricts(d);
-      } catch (e) {}
+      } catch (err) {
+        console.error('Failed to load districts', err);
+      }
     }
-    loadDistricts();
+    fetchDistricts();
   }, []);
 
+  // Sync personal details from profile & user
   useEffect(() => {
-    if (profile) {
-      setName(profile.name || user?.name || '');
-      setDistrict(profile.district || 'Belagavi');
-      setTaluk(profile.taluk || 'Belagavi');
-      setVillage(profile.village || '');
-      setLandAcres(profile.land_acres ? String(profile.land_acres) : '');
-      setLandOwnership(profile.land_ownership || 'Own');
-      setIrrigationType(profile.irrigation_type || 'Rainfed');
-      setFarmerCategory(profile.farmer_category || 'Small & Marginal');
-      setSelectedSpeech(profile.regional_speech_preference || 'North Karnataka');
-      setSelectedCrops(profile.crops_grown || ['Paddy']);
-    }
-  }, [profile, user]);
+    if (user || profile) {
+      setUsername(user?.username || (profile as any)?.username || '');
+      setFullName(profile?.name || user?.name || '');
+      setEmail(profile?.email || user?.email || '');
+      setPhone(profile?.mobile || user?.mobile || '');
 
-  const toggleCrop = (c: string) => {
-    if (selectedCrops.includes(c)) {
-      setSelectedCrops(selectedCrops.filter((x) => x !== c));
-    } else {
-      setSelectedCrops([...selectedCrops, c]);
+      const dist = profile?.district || 'Belagavi';
+      setSelectedDistrict(dist);
+      setSelectedTaluk(profile?.taluk || 'Belagavi');
+
+      // Account creation date
+      const createdDate = (profile as any)?.account_created_at || user?.created_at || profile?.created_at;
+      if (createdDate) {
+        try {
+          const d = new Date(createdDate);
+          setAccountCreatedAt(
+            d.toLocaleDateString(language === 'kn' ? 'kn-IN' : 'en-IN', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })
+          );
+        } catch {
+          setAccountCreatedAt(createdDate);
+        }
+      }
     }
+  }, [user, profile]);
+
+  // Update taluks when district changes
+  useEffect(() => {
+    const matched = districts.find((d) => d.name === selectedDistrict);
+    if (matched && matched.taluks && matched.taluks.length > 0) {
+      setAvailableTaluks(matched.taluks);
+      if (!matched.taluks.includes(selectedTaluk)) {
+        setSelectedTaluk(matched.taluks[0]);
+      }
+    } else {
+      setAvailableTaluks([selectedDistrict]);
+    }
+  }, [selectedDistrict, districts]);
+
+  // Clean up audio preview on unmount
+  useEffect(() => {
+    return () => {
+      if (audioPreviewRef.current) {
+        audioPreviewRef.current.pause();
+        audioPreviewRef.current = null;
+      }
+    };
+  }, []);
+
+  // Validate personal details
+  const validatePersonalDetails = (): string | null => {
+    if (!fullName.trim()) {
+      return language === 'kn' ? 'ದಯವಿಟ್ಟು ನಿಮ್ಮ ಪೂರ್ಣ ಹೆಸರನ್ನು ನಮೂದಿಸಿ.' : 'Please enter your full name.';
+    }
+    if (username.trim()) {
+      const uRegex = /^[a-zA-Z0-9_.]{3,30}$/;
+      if (!uRegex.test(username.trim())) {
+        return language === 'kn'
+          ? 'ಬಳಕೆದಾರ ಹೆಸರು 3 ರಿಂದ 30 ಅಕ್ಷರಗಳನ್ನು ಹೊಂದಿರಬೇಕು (ಕೇವಲ ಅಕ್ಷರಗಳು, ಸಂಖ್ಯೆಗಳು, _ ಅಥವಾ .).'
+          : 'Username must be 3-30 characters (alphanumeric, underscore, or dot).';
+      }
+    }
+    if (email.trim()) {
+      const eRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+      if (!eRegex.test(email.trim())) {
+        return language === 'kn' ? 'ದಯವಿಟ್ಟು ಮಾನ್ಯವಾದ ಇಮೇಲ್ ವಿಳಾಸವನ್ನು ನಮೂದಿಸಿ.' : 'Please enter a valid email address.';
+      }
+    }
+    return null;
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  // Save Personal Details
+  const handleSavePersonal = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-    setSuccessMsg(null);
+    setPersonalError(null);
+    setPersonalSuccess(null);
 
+    const validationError = validatePersonalDetails();
+    if (validationError) {
+      setPersonalError(validationError);
+      return;
+    }
+
+    setPersonalSaving(true);
     try {
-      const acresVal = landAcres ? parseFloat(landAcres) : undefined;
       await api.updateFarmerProfile({
-        name,
-        district,
-        taluk,
-        village,
-        land_acres: isNaN(acresVal as any) ? undefined : acresVal,
-        land_ownership: landOwnership,
-        irrigation_type: irrigationType,
-        farmer_category: farmerCategory,
-        regional_speech_preference: selectedSpeech,
-        crops_grown: selectedCrops,
+        name: fullName.trim(),
+        username: username.trim() || undefined,
+        email: email.trim() || undefined,
+        district: selectedDistrict,
+        taluk: selectedTaluk
       });
 
-      setRegionalDialect(selectedSpeech as any);
       await refreshProfile();
-      setSuccessMsg('ಪ್ರೊಫೈಲ್ ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ (Profile updated successfully)!');
-      setTimeout(() => setSuccessMsg(null), 3500);
+      setPersonalSuccess(
+        language === 'kn'
+          ? 'ವೈಯಕ್ತಿಕ ವಿವರಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ!'
+          : 'Personal details updated successfully!'
+      );
+      setTimeout(() => setPersonalSuccess(null), 4000);
     } catch (err: any) {
-      console.error(err);
+      setPersonalError(err.message || 'Failed to update personal details.');
     } finally {
-      setSaving(false);
+      setPersonalSaving(false);
     }
   };
 
-  const currentDistObj = districts.find((d) => d.name === district);
-  const talukList = currentDistObj ? currentDistObj.taluks : [district];
+  // Preview Voice Action
+  const handlePreviewVoice = async () => {
+    if (isPlayingPreview && audioPreviewRef.current) {
+      audioPreviewRef.current.pause();
+      setIsPlayingPreview(false);
+      return;
+    }
+
+    setPreviewLoading(true);
+    try {
+      const voiceId =
+        regionalDialect === 'English'
+          ? voiceGender === 'male'
+            ? 'en_male'
+            : 'en_female'
+          : voiceGender === 'male'
+          ? 'kn_male'
+          : 'kn_female';
+
+      const res = await api.previewVoice(voiceId);
+      if (res && res.audio_url) {
+        if (audioPreviewRef.current) {
+          audioPreviewRef.current.pause();
+        }
+        const audio = new Audio(res.audio_url);
+        audio.playbackRate = speechSpeed;
+        audioPreviewRef.current = audio;
+        audio.onended = () => setIsPlayingPreview(false);
+        audio.onerror = () => setIsPlayingPreview(false);
+        await audio.play();
+        setIsPlayingPreview(true);
+      }
+    } catch (err) {
+      console.warn('Voice preview playback error:', err);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  // Explicit Settings Confirmation Action
+  const handleConfirmSaveSettings = () => {
+    setSettingsSuccess(
+      language === 'kn'
+        ? 'ವೆಬ್‌ಸೈಟ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಗಿದೆ ಮತ್ತು ಅನ್ವಯಿಸಲಾಗಿದೆ!'
+        : 'Website settings saved and synchronized successfully!'
+    );
+    setTimeout(() => setSettingsSuccess(null), 3500);
+  };
+
+  // Logout Handler
+  const handleConfirmLogout = () => {
+    if (audioPreviewRef.current) {
+      audioPreviewRef.current.pause();
+      audioPreviewRef.current = null;
+    }
+    setShowLogoutModal(false);
+    logout();
+    navigate('/login');
+  };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      
-      {/* Header */}
-      <div className="space-y-2">
-        <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#D8AA48]">
-          <UserIcon className="w-4 h-4 text-[#2F7650]" />
-          <span>Farmer Profile Management</span>
-        </div>
-        <h1 className="text-3xl font-extrabold text-[#19251E] dark:text-[#EDF3EF] font-kannada">
-          ರೈತರ ಪ್ರೊಫೈಲ್ & ವಿವರಗಳು (My Profile)
-        </h1>
-        <p className="text-xs sm:text-sm text-[#69766D] dark:text-[#9BB0A4]">
-          Manage your agricultural profile, landholding, cultivated crops, and preferred regional Kannada speech style
-        </p>
-      </div>
-
-      {successMsg && (
-        <div className="p-4 rounded-2xl bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 flex items-center gap-2.5 text-xs font-bold text-green-800 dark:text-green-300">
-          <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
-          <span>{successMsg}</span>
-        </div>
-      )}
-
-      {/* Main Profile Form Card */}
-      <form onSubmit={handleSave} className="bg-white dark:bg-[#11221A] rounded-3xl border border-[#E2E8DF] dark:border-[#1E382B] p-6 sm:p-10 shadow-sm space-y-8">
-        
-        {/* Section 1: Basic Info */}
-        <div className="space-y-4">
-          <h2 className="text-base font-bold text-[#19251E] dark:text-[#EDF3EF] font-kannada border-b border-[#E2E8DF] dark:border-[#1E382B] pb-2">
-            ಮೂಲ ವಿವರಗಳು (Basic Credentials)
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Header Banner */}
+        <div className="bg-gradient-to-r from-emerald-700 via-green-700 to-teal-800 rounded-2xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <label className="block text-xs font-bold text-[#19251E] dark:text-[#EDF3EF] mb-1 font-kannada">
-                ಹೆಸರು (Full Name)
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-[#E2E8DF] dark:border-[#1E382B] bg-[#F7F9F5] dark:bg-[#0B1711] text-[#19251E] dark:text-[#EDF3EF] focus:outline-none focus:border-[#2F7650]"
-              />
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold mb-2">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
+                {language === 'kn' ? 'ದೃಢೀಕೃತ ರೈತ ಖಾತೆ' : 'Verified Farmer Account'}
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold font-kannada">
+                {language === 'kn' ? 'ನನ್ನ ಪ್ರೊಫೈಲ್ ಮತ್ತು ಸೆಟ್ಟಿಂಗ್ಸ್' : 'My Profile & Settings'}
+              </h1>
+              <p className="text-emerald-100 text-sm mt-1 max-w-xl">
+                {language === 'kn'
+                  ? 'ನಿಮ್ಮ ವೈಯಕ್ತಿಕ ವಿವರಗಳು ಮತ್ತು ವೆಬ್‌ಸೈಟ್ ಆದ್ಯತೆಗಳನ್ನು ಇಲ್ಲಿ ನಿರ್ವಹಿಸಿ.'
+                  : 'Manage your personal details, AI voice assistant, and application preferences.'}
+              </p>
             </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#19251E] dark:text-[#EDF3EF] mb-1 font-kannada">
-                ನೋಂದಾಯಿತ ಮೊಬೈಲ್ (Mobile)
-              </label>
-              <input
-                type="text"
-                disabled
-                value={user?.mobile || ''}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-[#E2E8DF] dark:border-[#1E382B] bg-gray-100 dark:bg-gray-800 text-[#69766D] cursor-not-allowed"
-              />
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20">
+              <div className="w-10 h-10 rounded-full bg-emerald-500/40 flex items-center justify-center font-bold text-lg text-white">
+                {(fullName || username || 'KM').charAt(0).toUpperCase()}
+              </div>
+              <div className="text-left">
+                <div className="text-xs text-emerald-200">{language === 'kn' ? 'ಲಾಗಿನ್ ಆದವರು' : 'Logged in as'}</div>
+                <div className="font-semibold text-sm truncate max-w-[160px]">{username || fullName || 'Farmer'}</div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Section 2: Regional Dialect & Location */}
-        <div className="space-y-4">
-          <h2 className="text-base font-bold text-[#19251E] dark:text-[#EDF3EF] font-kannada border-b border-[#E2E8DF] dark:border-[#1E382B] pb-2 flex items-center gap-2">
-            <Mic className="w-4 h-4 text-[#D8AA48]" />
-            <span>ಸ್ಥಳ & ಕನ್ನಡ ಆಡುಭಾಷೆ ಶೈಲಿ (Location & Speech Style)</span>
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-[#19251E] dark:text-[#EDF3EF] mb-1 font-kannada">
-                ಜಿಲ್ಲೆ (District)
-              </label>
-              <select
-                value={district}
-                onChange={(e) => setDistrict(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-[#E2E8DF] dark:border-[#1E382B] bg-[#F7F9F5] dark:bg-[#0B1711] text-[#19251E] dark:text-[#EDF3EF]"
-              >
-                {districts.map((d) => (
-                  <option key={d.name} value={d.name}>
-                    {d.name_kn} ({d.name})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#19251E] dark:text-[#EDF3EF] mb-1 font-kannada">
-                ತಾಲೂಕು (Taluk)
-              </label>
-              <select
-                value={taluk}
-                onChange={(e) => setTaluk(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-[#E2E8DF] dark:border-[#1E382B] bg-[#F7F9F5] dark:bg-[#0B1711] text-[#19251E] dark:text-[#EDF3EF]"
-              >
-                {talukList.map((t: string) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#19251E] dark:text-[#EDF3EF] mb-1 font-kannada">
-                ಗ್ರಾಮ (Village)
-              </label>
-              <input
-                type="text"
-                value={village}
-                onChange={(e) => setVillage(e.target.value)}
-                placeholder="Village name"
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-[#E2E8DF] dark:border-[#1E382B] bg-[#F7F9F5] dark:bg-[#0B1711] text-[#19251E] dark:text-[#EDF3EF]"
-              />
+        {/* =========================================================================
+            SECTION 1: PERSONAL DETAILS
+        ========================================================================= */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 sm:p-8 transition-colors">
+          <div className="flex items-center justify-between pb-5 border-b border-slate-200 dark:border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 rounded-xl">
+                <UserIcon className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white font-kannada">
+                  {language === 'kn' ? '೧. ವೈಯಕ್ತಿಕ ವಿವರಗಳು (Personal Details)' : '1. Personal Details'}
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {language === 'kn'
+                    ? 'ನಿಮ್ಮ ಹೆಸರು, ಸಂಪರ್ಕ ಹಾಗೂ ವಿಳಾಸದ ವಿವರಗಳನ್ನು ಇಲ್ಲಿ ನವೀಕರಿಸಿ.'
+                    : 'View and update your personal information, location, and account details.'}
+                </p>
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-[#19251E] dark:text-[#EDF3EF] mb-1 font-kannada">
-              ಕನ್ನಡ ಧ್ವನಿ ಶೈಲಿ (Regional Kannada Speech Dialect)
-            </label>
-            <select
-              value={selectedSpeech}
-              onChange={(e) => setSelectedSpeech(e.target.value)}
-              className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-[#E2E8DF] dark:border-[#1E382B] bg-[#F7F9F5] dark:bg-[#0B1711] text-[#174C36] dark:text-[#75A96A] font-bold"
-            >
-              <option value="North Karnataka">ಉತ್ತರ ಕರ್ನಾಟಕ (ಧಾರವಾಡ, ಬೆಳಗಾವಿ, ವಿಜಯಪುರ, ಕಲಬುರಗಿ ಶೈಲಿ)</option>
-              <option value="South Karnataka">ದಕ್ಷಿಣ ಕರ್ನಾಟಕ (ಮೈಸೂರು, ಮಂಡ್ಯ, ಹಾಸನ, ಬೆಂಗಳೂರು ಶೈಲಿ)</option>
-              <option value="Standard Kannada">ಶಿಷ್ಟ ಕನ್ನಡ (ಸರ್ಕಾರಿ ಅಧಿಕೃತ ಭಾಷಾ ಶೈಲಿ)</option>
-            </select>
-          </div>
+          {/* Feedback messages */}
+          {personalSuccess && (
+            <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 rounded-xl flex items-center gap-2.5 text-sm animate-fade-in">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              <span>{personalSuccess}</span>
+            </div>
+          )}
+
+          {personalError && (
+            <div className="mt-4 p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 rounded-xl flex items-center gap-2.5 text-sm animate-fade-in">
+              <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
+              <span>{personalError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSavePersonal} className="mt-6 space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Username */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+                  {language === 'kn' ? 'ಬಳಕೆದಾರ ಹೆಸರು (Username)' : 'Username'}
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-sm font-medium">
+                    @
+                  </span>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="e.g. basavaraj_patil"
+                    className="w-full pl-8 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm transition"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                  {language === 'kn'
+                    ? 'AI ಸಹಾಯಕ ನಿಮ್ಮನ್ನು ಈ ಹೆಸರಿನಿಂದ ಸಂಬೋಧಿಸುತ್ತದೆ.'
+                    : 'The AI assistant greets you personally by this username.'}
+                </p>
+              </div>
+
+              {/* Full Name */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+                  {language === 'kn' ? 'ಪೂರ್ಣ ಹೆಸರು (Full Name)' : 'Full Name'} *
+                </label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                  <input
+                    type="text"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="e.g. Basavaraj Patil"
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm transition"
+                  />
+                </div>
+              </div>
+
+              {/* Email Address */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+                  {language === 'kn' ? 'ಇಮೇಲ್ ವಿಳಾಸ (Email Address)' : 'Email Address'}
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="farmer@example.com"
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm transition"
+                  />
+                </div>
+              </div>
+
+              {/* Phone Number (Verified, protected) */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+                  {language === 'kn' ? 'ದೂರವಾಣಿ ಸಂಖ್ಯೆ (Phone Number)' : 'Phone Number'}
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                  <input
+                    type="text"
+                    readOnly
+                    value={phone}
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-xl text-sm cursor-not-allowed"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                  {language === 'kn' ? 'ದೃಢೀಕರಿಸಿದ ನೋಂದಾಯಿತ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ.' : 'Verified registered mobile number.'}
+                </p>
+              </div>
+
+              {/* District */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+                  {language === 'kn' ? 'ಜಿಲ್ಲೆ (District)' : 'District'} *
+                </label>
+                <div className="relative">
+                  <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                  <select
+                    value={selectedDistrict}
+                    onChange={(e) => setSelectedDistrict(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm transition"
+                  >
+                    {districts.map((d) => (
+                      <option key={d.name} value={d.name}>
+                        {d.name} ({d.name_kn})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Taluk */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+                  {language === 'kn' ? 'ತಾಲೂಕು (Taluka)' : 'Taluka'} *
+                </label>
+                <select
+                  value={selectedTaluk}
+                  onChange={(e) => setSelectedTaluk(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm transition"
+                >
+                  {availableTaluks.map((tName) => (
+                    <option key={tName} value={tName}>
+                      {tName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Account Creation Date */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+                  {language === 'kn' ? 'ಖಾತೆ ರಚನೆ ದಿನಾಂಕ (Account Created Date)' : 'Account Created Date'}
+                </label>
+                <div className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/50 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>{accountCreatedAt || 'October 2026'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Save Personal Details Button */}
+            <div className="flex justify-end pt-3">
+              <button
+                type="submit"
+                disabled={personalSaving}
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm hover:shadow transition disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" />
+                {personalSaving
+                  ? language === 'kn'
+                    ? 'ಉಳಿಸಲಾಗುತ್ತಿದೆ...'
+                    : 'Saving...'
+                  : language === 'kn'
+                  ? 'ವೈಯಕ್ತಿಕ ವಿವರಗಳನ್ನು ಉಳಿಸಿ'
+                  : 'Save Personal Details'}
+              </button>
+            </div>
+          </form>
         </div>
 
-        {/* Section 3: Landholding Details */}
-        <div className="space-y-4">
-          <h2 className="text-base font-bold text-[#19251E] dark:text-[#EDF3EF] font-kannada border-b border-[#E2E8DF] dark:border-[#1E382B] pb-2">
-            ಕೃಷಿ ಭೂಮಿ ವಿವರಗಳು (Landholding Circumstances)
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-[#19251E] dark:text-[#EDF3EF] mb-1 font-kannada">
-                ಜಮೀನಿನ ವಿಸ್ತೀರ್ಣ (Acres)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={landAcres}
-                onChange={(e) => setLandAcres(e.target.value)}
-                placeholder="e.g. 3.0"
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-[#E2E8DF] dark:border-[#1E382B] bg-[#F7F9F5] dark:bg-[#0B1711] text-[#19251E] dark:text-[#EDF3EF]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#19251E] dark:text-[#EDF3EF] mb-1 font-kannada">
-                ಮಾಲೀಕತ್ವ (Ownership)
-              </label>
-              <select
-                value={landOwnership}
-                onChange={(e) => setLandOwnership(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-[#E2E8DF] dark:border-[#1E382B] bg-[#F7F9F5] dark:bg-[#0B1711] text-[#19251E] dark:text-[#EDF3EF]"
-              >
-                <option value="Own">ಸ್ವಂತ ಭೂಮಿ (Own Title)</option>
-                <option value="Tenant">ಗೇಣಿ ಭೂಮಿ (Tenant / Leased)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#19251E] dark:text-[#EDF3EF] mb-1 font-kannada">
-                ನೀರಾವರಿ (Irrigation)
-              </label>
-              <select
-                value={irrigationType}
-                onChange={(e) => setIrrigationType(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-[#E2E8DF] dark:border-[#1E382B] bg-[#F7F9F5] dark:bg-[#0B1711] text-[#19251E] dark:text-[#EDF3EF]"
-              >
-                <option value="Rainfed">ಖುಷ್ಕಿ / ಮಳೆ ಆಶ್ರಿತ (Rainfed)</option>
-                <option value="Borewell">ಕೊಳವೆಬಾವಿ (Borewell)</option>
-                <option value="Canal">ಕಾಲುವೆ ನೀರಾವರಿ (Canal)</option>
-                <option value="Drip">ಹನಿ ನೀರಾವರಿ (Drip)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#19251E] dark:text-[#EDF3EF] mb-1 font-kannada">
-                ರೈತರ ವರ್ಗ (Category)
-              </label>
-              <select
-                value={farmerCategory}
-                onChange={(e) => setFarmerCategory(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-[#E2E8DF] dark:border-[#1E382B] bg-[#F7F9F5] dark:bg-[#0B1711] text-[#19251E] dark:text-[#EDF3EF]"
-              >
-                <option value="Small & Marginal">ಸಣ್ಣ & ಅತಿ ಸಣ್ಣ (Small & Marginal)</option>
-                <option value="General">ಸಾಮಾನ್ಯ ವರ್ಗ (General)</option>
-                <option value="SC/ST">ಪರಿಶಿಷ್ಟ ಜಾತಿ / ಪಂಗಡ (SC/ST)</option>
-                <option value="Women">ಮಹಿಳಾ ರೈತರು (Women)</option>
-              </select>
+        {/* =========================================================================
+            SECTION 2: WEBSITE SETTINGS (Synchronized with Centralized SettingsContext)
+        ========================================================================= */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 sm:p-8 transition-colors">
+          <div className="flex items-center justify-between pb-5 border-b border-slate-200 dark:border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 rounded-xl">
+                <Sliders className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white font-kannada">
+                  {language === 'kn' ? '೨. ವೆಬ್‌ಸೈಟ್ ಸೆಟ್ಟಿಂಗ್ಸ್ (Website Settings)' : '2. Website Settings'}
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {language === 'kn'
+                    ? 'ಥೀಮ್, ಭಾಷೆ, ಧ್ವನಿ ಶೈಲಿ ಮತ್ತು AI ಸಹಾಯಕ ಸಂವಾದದ ಆದ್ಯತೆಗಳು (ಟೂಲ್‌ಬಾರ್‌ನೊಂದಿಗೆ ಸಿಂಕ್ರೊನೈಸ್ ಆಗಿದೆ).'
+                    : 'Configure theme, regional dialect, neural voice, and AI voice assistant behavior (synchronized with toolbar).'}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Section 4: Cultivated Crops Selection */}
-        <div className="space-y-3">
-          <label className="block text-xs font-bold text-[#19251E] dark:text-[#EDF3EF] font-kannada">
-            ನೀವು ಬೆಳೆಯುವ ಪ್ರಮುಖ ಬೆಳೆಗಳು (Cultivated Crops):
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {allCrops.map((c) => {
-              const isSelected = selectedCrops.includes(c);
-              return (
+          {/* Settings Feedback */}
+          {settingsSuccess && (
+            <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 rounded-xl flex items-center gap-2.5 text-sm animate-fade-in">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              <span>{settingsSuccess}</span>
+            </div>
+          )}
+
+          <div className="mt-6 space-y-8">
+            {/* SUB-SECTION 1: APPEARANCE (THEME) */}
+            <div>
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-3">
+                {language === 'kn' ? 'ಗೋಚರತೆ / ಥೀಮ್ (Appearance)' : 'Appearance & Theme'}
+              </h3>
+              <div className="grid grid-cols-2 gap-4 max-w-md">
                 <button
                   type="button"
-                  key={c}
-                  onClick={() => toggleCrop(c)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-colors ${
-                    isSelected
-                      ? 'bg-[#174C36] text-white border-[#174C36]'
-                      : 'bg-[#F7F9F5] dark:bg-[#0B1711] border-[#E2E8DF] dark:border-[#1E382B] text-[#69766D]'
+                  onClick={() => setTheme('light')}
+                  className={`flex items-center justify-center gap-3 p-3.5 rounded-xl border text-sm font-medium transition ${
+                    theme === 'light'
+                      ? 'border-emerald-600 bg-emerald-50/80 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200 font-semibold ring-2 ring-emerald-500/20'
+                      : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
                   }`}
                 >
-                  {c} {isSelected && '✓'}
+                  <Sun className="w-5 h-5 text-amber-500" />
+                  <span>{language === 'kn' ? 'ಲೈಟ್ ಮೋಡ್ (Light)' : 'Light Mode'}</span>
                 </button>
-              );
-            })}
+
+                <button
+                  type="button"
+                  onClick={() => setTheme('dark')}
+                  className={`flex items-center justify-center gap-3 p-3.5 rounded-xl border text-sm font-medium transition ${
+                    theme === 'dark'
+                      ? 'border-emerald-600 bg-emerald-50/80 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200 font-semibold ring-2 ring-emerald-500/20'
+                      : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
+                  }`}
+                >
+                  <Moon className="w-5 h-5 text-indigo-400" />
+                  <span>{language === 'kn' ? 'ಡಾರ್ಕ್ ಮೋಡ್ (Dark)' : 'Dark Mode'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* SUB-SECTION 2: LANGUAGE & REGIONAL DIALECT */}
+            <div>
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-3">
+                {language === 'kn' ? 'ಭಾಷೆ ಮತ್ತು ಪ್ರಾದೇಶಿಕ ಶೈಲಿ (Language & Dialect)' : 'Language & Dialect'}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  {
+                    id: 'North Karnataka',
+                    title: 'North Karnataka Kannada',
+                    title_kn: 'ಉತ್ತರ ಕರ್ನಾಟಕ ಕನ್ನಡ',
+                    desc: 'ಬೆಳಗಾವಿ, ಧಾರವಾಡ, ವಿಜಯಪುರ, ಬಾಗಲಕೋಟೆ ಶೈಲಿ ("ನೋಡ್ರೀ", "ಮಾಡ್ರೀ", "ಐತಿ")'
+                  },
+                  {
+                    id: 'South Karnataka',
+                    title: 'South Karnataka Kannada',
+                    title_kn: 'ದಕ್ಷಿಣ ಕರ್ನಾಟಕ ಕನ್ನಡ',
+                    desc: 'ಮೈಸೂರು, ಮಂಡ್ಯ, ಹಾಸನ, ಬೆಂಗಳೂರು ಶೈಲಿ'
+                  },
+                  {
+                    id: 'Standard Kannada',
+                    title: 'Standard Kannada',
+                    title_kn: 'ಶಿಷ್ಟ ಕನ್ನಡ (ಪುಸ್ತಕ ಭಾಷೆ)',
+                    desc: 'ಔಪಚಾರಿಕ ಶಿಷ್ಟ ಕನ್ನಡ ಭಾಷಾ ಶೈಲಿ'
+                  },
+                  {
+                    id: 'English',
+                    title: 'Indian English',
+                    title_kn: 'ಇಂಡಿಯನ್ ಇಂಗ್ಲಿಷ್',
+                    desc: 'Standard agricultural terminology in Indian English'
+                  }
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setRegionalDialect(item.id as RegionalDialect)}
+                    className={`flex flex-col text-left p-3.5 rounded-xl border transition ${
+                      regionalDialect === item.id
+                        ? 'border-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-500/20'
+                        : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="font-semibold text-sm font-kannada">
+                        {language === 'kn' ? item.title_kn : item.title}
+                      </span>
+                      {regionalDialect === item.id && <Check className="w-4 h-4 text-emerald-600" />}
+                    </div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-1">{item.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* SUB-SECTION 3: VOICE PREFERENCE (MALE / FEMALE) + PREVIEW */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                  {language === 'kn' ? 'ಧ್ವನಿ ಆಯ್ಕೆ (Neural Voice Preference)' : 'Voice Preference'}
+                </h3>
+
+                <button
+                  type="button"
+                  onClick={handlePreviewVoice}
+                  disabled={previewLoading}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-semibold hover:bg-emerald-200 transition"
+                >
+                  {previewLoading ? (
+                    <span>{language === 'kn' ? 'ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ...' : 'Loading voice...'}</span>
+                  ) : isPlayingPreview ? (
+                    <>
+                      <Square className="w-3.5 h-3.5 fill-current" />
+                      <span>{language === 'kn' ? 'ನಿಲ್ಲಿಸಿ' : 'Stop Preview'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="w-3.5 h-3.5" />
+                      <span>{language === 'kn' ? 'ಧ್ವನಿ ಕೇಳಿ (Preview)' : 'Preview Voice'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setVoiceGender('female')}
+                  className={`flex items-center justify-between p-4 rounded-xl border text-left transition ${
+                    voiceGender === 'female'
+                      ? 'border-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-500/20'
+                      : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
+                  }`}
+                >
+                  <div>
+                    <div className="font-semibold text-sm">
+                      {language === 'kn' ? 'ಮಹಿಳಾ ಧ್ವನಿ (ಸಪ್ನಾ - Sapna)' : 'Female Voice (Sapna / Neerja)'}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      {language === 'kn'
+                        ? 'ಸ್ವಾಭಾವಿಕ, ಮೃದುವಾದ ಗ್ರಾಮೀಣ ಶೈಲಿಯ ಧ್ವನಿ'
+                        : 'Warm, natural female neural voice'}
+                    </div>
+                  </div>
+                  {voiceGender === 'female' && <Check className="w-5 h-5 text-emerald-600" />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setVoiceGender('male')}
+                  className={`flex items-center justify-between p-4 rounded-xl border text-left transition ${
+                    voiceGender === 'male'
+                      ? 'border-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-500/20'
+                      : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
+                  }`}
+                >
+                  <div>
+                    <div className="font-semibold text-sm">
+                      {language === 'kn' ? 'ಪುರುಷ ಧ್ವನಿ (ಗಗನ್ - Gagan)' : 'Male Voice (Gagan / Prabhat)'}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      {language === 'kn'
+                        ? 'ಗಂಭೀರ, ವಿಶ್ವಾಸಾರ್ಹ ಕೃಷಿ ಸಲಹಾ ಧ್ವನಿ'
+                        : 'Deep, clear male neural voice'}
+                    </div>
+                  </div>
+                  {voiceGender === 'male' && <Check className="w-5 h-5 text-emerald-600" />}
+                </button>
+              </div>
+            </div>
+
+            {/* SUB-SECTION 4: VOICE ASSISTANT CONTROLS */}
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-4">
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2">
+                {language === 'kn' ? 'AI ಧ್ವನಿ ಸಹಾಯಕ ನಿಯಂತ್ರಣಗಳು (Voice Assistant Controls)' : 'Voice Assistant Controls'}
+              </h3>
+
+              {/* Master Voice Assistant Enabled Toggle */}
+              <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="pr-4">
+                  <div className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <Bot className="w-4 h-4 text-emerald-600" />
+                    <span>{language === 'kn' ? 'ಧ್ವನಿ ಸಹಾಯಕ ಸಕ್ರಿಯಗೊಳಿಸಿ (Voice Assistant)' : 'Enable Voice Assistant System'}</span>
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    {language === 'kn'
+                      ? 'ವೆಬ್‌ಸೈಟ್‌ನಾದ್ಯಂತ AI ಧ್ವನಿ ಸಹಾಯಕವನ್ನು ಆನ್ ಅಥವಾ ಆಫ್ ಮಾಡಿ.'
+                      : 'Master switch to enable or disable the AI voice assistant across the platform.'}
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={voiceAssistantEnabled}
+                    onChange={(e) => setVoiceAssistantEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
+
+              {/* Automatic Voice Response Toggle */}
+              <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="pr-4">
+                  <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    {language === 'kn' ? 'ಸ್ವಯಂಚಾಲಿತ ಧ್ವನಿ ಉತ್ತರಗಳು (Auto Voice Responses)' : 'Automatic Voice Responses'}
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    {language === 'kn'
+                      ? 'AI ಸಹಾಯಕ ಪ್ರತಿಯೊಂದು ಪ್ರಶ್ನೆ ಮತ್ತು ಉತ್ತರವನ್ನು ಧ್ವನಿಯ ಮೂಲಕ ಓದಿ ಹೇಳಬೇಕೆ?'
+                      : 'Automatically speak greetings, follow-up questions, and results aloud.'}
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={autoVoiceResponse}
+                    onChange={(e) => setAutoVoiceResponse(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
+
+              {/* Voice Input Toggle */}
+              <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="pr-4">
+                  <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    {language === 'kn' ? 'ಧ್ವನಿ ಇನ್‌ಪುಟ್ (Voice Input / Mic)' : 'Enable Voice Input (Microphone)'}
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    {language === 'kn'
+                      ? 'ಕನ್ನಡ ಧ್ವನಿ ಸಂಭಾಷಣೆಯ ಮೈಕ್ರೋಫೋನ್ ಇನ್‌ಪುಟ್ ಸಕ್ರಿಯಗೊಳಿಸಿ.'
+                      : 'Allow speaking questions using speech-to-text recognition.'}
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={voiceInputEnabled}
+                    onChange={(e) => setVoiceInputEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
+
+              {/* Speech Speed Adjustment */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                      {language === 'kn' ? 'ಧ್ವನಿ ವೇಗ (Speech Playback Speed)' : 'Speech Playback Speed'}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      {language === 'kn'
+                        ? 'ಸಹಾಯಕರ ಮಾತು ನಿಧಾನ ಅಥವಾ ವೇಗವಾಗಿರಬೇಕೆ ಎಂದು ಹೊಂದಿಸಿ.'
+                        : 'Adjust audio playback rate (0.75x to 1.5x).'}
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold text-xs rounded-lg">
+                    {speechSpeed.toFixed(2)}x
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  {[0.75, 1.0, 1.25, 1.5].map((spd) => (
+                    <button
+                      key={spd}
+                      type="button"
+                      onClick={() => setSpeechSpeed(spd)}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                        Math.abs(speechSpeed - spd) < 0.05
+                          ? 'border-emerald-600 bg-emerald-600 text-white'
+                          : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      {spd === 1.0 ? '1.0x (Normal)' : `${spd}x`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Save Website Settings Confirmation Button */}
+            <div className="flex justify-end pt-3">
+              <button
+                type="button"
+                onClick={handleConfirmSaveSettings}
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm hover:shadow transition"
+              >
+                <Save className="w-4 h-4" />
+                <span>
+                  {language === 'kn' ? 'ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ಖಚಿತಪಡಿಸಿ (Confirm Settings)' : 'Save Settings'}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Submit Save Button */}
-        <div className="pt-4 border-t border-[#E2E8DF] dark:border-[#1E382B] flex items-center justify-end">
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-6 py-3 rounded-xl bg-[#174C36] hover:bg-[#123B2B] text-white text-xs sm:text-sm font-bold shadow-md transition-colors flex items-center gap-2"
-          >
-            <Save className="w-4 h-4" />
-            <span>{saving ? 'ಉಳಿಸಲಾಗುತ್ತಿದೆ...' : 'ಪ್ರೊಫೈಲ್ ಉಳಿಸಿ (Save Profile)'}</span>
-          </button>
+        {/* =========================================================================
+            SECTION 3: LOGOUT
+        ========================================================================= */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 sm:p-8 transition-colors">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 rounded-xl">
+                <LogOut className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white font-kannada">
+                  {language === 'kn' ? '೩. ಖಾತೆಯಿಂದ ನಿರ್ಗಮಿಸಿ (Logout)' : '3. Logout'}
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {language === 'kn'
+                    ? 'ನಿಮ್ಮ ಖಾತೆಯ ಪ್ರಸ್ತುತ ಸಕ್ರಿಯ ಅಧಿವೇಶನವನ್ನು ಕೊನೆಗೊಳಿಸಿ. ನಿಮ್ಮ ಉಳಿಸಿದ ಪ್ರೊಫೈಲ್ ಡೇಟಾ ಅಳಿಸಿಹೋಗುವುದಿಲ್ಲ.'
+                    : 'Safely end your current authenticated session. Your saved farmer profile and history are preserved.'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowLogoutModal(true)}
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-semibold shadow-sm hover:shadow transition"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>{language === 'kn' ? 'ಖಾತೆಯಿಂದ ನಿರ್ಗಮಿಸಿ' : 'Logout'}</span>
+            </button>
+          </div>
         </div>
-      </form>
+      </div>
+
+      {/* =========================================================================
+          LOGOUT CONFIRMATION MODAL
+      ========================================================================= */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600 mx-auto flex items-center justify-center">
+              <LogOut className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white font-kannada">
+              {language === 'kn' ? 'ನಿರ್ಗಮಿಸಲು ನೀವು ಖಚಿತವೇ?' : 'Confirm Logout'}
+            </h3>
+
+            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+              {language === 'kn'
+                ? 'ಖಾತೆಯಿಂದ ನಿರ್ಗಮಿಸಿದ ನಂತರ ರಕ್ಷಿತ ಪುಟಗಳನ್ನು ವೀಕ್ಷಿಸಲು ಪುನಃ ಲಾಗಿನ್ ಆಗಬೇಕು. ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಮತ್ತು ಸಂವಾದ ಇತಿಹಾಸ ಡೇಟಾಬೇಸ್‌ನಲ್ಲಿ ಸುರಕ್ಷಿತವಾಗಿ ಉಳಿಯುತ್ತದೆ.'
+                : 'Are you sure you want to log out? Your saved farmer profile and agricultural conversation history will remain securely stored in the database.'}
+            </p>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-sm rounded-xl transition"
+              >
+                {language === 'kn' ? 'ರದ್ದುಮಾಡಿ (Cancel)' : 'Cancel'}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmLogout}
+                className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm rounded-xl transition shadow-sm"
+              >
+                {language === 'kn' ? 'ಹೌದು, ನಿರ್ಗಮಿಸಿ' : 'Yes, Logout'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

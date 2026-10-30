@@ -1,0 +1,31 @@
+term_id,local_term,standard_kannada_term,english_meaning,concept_id,concept_category,district_or_region,alternative_spellings,example_sentence,verified_by,verification_status,notes
+VOC001,ಕೃಷಿ,ಕೃಷಿ,Agriculture / Farming,AGRI_GENERAL,activity,Karnataka Statewide,ವ್ಯವಸಾಯ,ಕೃಷಿ ನಮ್ಮ ದೇಶದ ಬೆನ್ನೆಲುಬು,Karnataka Dept of Agriculture,verified,General agricultural concept
+VOC002,ರೈತ,ರೈತ,Farmer / Cultivator,FARMER_IDENTITY,activity,Karnataka Statewide,ರೈತರು; ರೈತ ಬಾಂಧವ,ರೈತರಿಗೆ ಸರ್ಕಾರದ ನೆರವು,Karnataka Dept of Agriculture,verified,Cultivator concept
+VOC003,ಐತಿ,ಇದೆ,is / exists,EXISTENCE_VERB,verb,North Karnataka,ಐತೀ; ಐತೆ,ನನ್ನ ಕಡೆ ಮೂರು ಎಕರೆ ಹೊಲ ಐತಿ,Regional Native Speaker Panel,verified,Common affirmative verb in Belagavi and Dharwad
+VOC004,ಆಗತೈತಿ,ಆಗುತ್ತದೆ,will happen / is done,OCCURRENCE_VERB,verb,North Karnataka,ಆಗತೈತೆ; ಆಗ್ತತಿ,ಈ ವರ್ಷ ಬೆಳೆ ಚಲೋ ಆಗತೈತಿ,Regional Native Speaker Panel,verified,Future and present habitual verb marker
+VOC005,ಶೇಂಗಾ,ಕಡಲೆಕಾಯಿ,Groundnut / Peanut,CROP_GROUNDNUT,crop,North Karnataka,ಶೆಂಗಾ; ಶೇಂಗಾಯಿ,ನಾಲ್ಕು ಎಕರೆಯಲ್ಲಿ ಶೇಂಗಾ ಬಿತ್ತನೆ ಮಾಡಿನಿ,UAS Dharwad Agronomy Dept,verified,Standard North Karnataka agricultural term for groundnut
+VOC006,ಖುಷ್ಕಿ,ಮಳೆಯಾಶ್ರಿತ,Rainfed / Dryland,LAND_RAINFED,input,North Karnataka,ಖುಷ್ಕೀ; ಕುಷ್ಕಿ,ನಮ್ಮದು ಪೂರ್ತಿ ಖುಷ್ಕಿ ಜಮೀನು,Karnataka Land Records Terminology,verified,Official revenue and farming term for rainfed land
+VOC007,ಹೊಲ,ಜಮೀನು,Agricultural farmland,LAND_FIELD,input,North Karnataka,ಹೊಲಗದ್ದೆ; ಒಲ,ಹೊಲಕ್ಕೆ ಗೊಬ್ಬರ ಹಾಕಬೇಕು,Regional Native Speaker Panel,verified,Farmland term in North Karnataka
+VOC008,ತೊಗರಿಬೇಳೆ,ತೊಗರಿ,Tur / Red gram,CROP_TUR,crop,Kalaburagi / North Karnataka,ತೊಗರಿ ಬೇಳೆ,ತೊಗರಿ ಬೆಳೆಗೆ ಕೀಟಬಾಧೆ ಬಂದೈತಿ,UAS Raichur,verified,Major pulse crop of Kalaburagi region
+VOC009,ಹಿಂಗಾರು,ಹಿಂಗಾರು ಹಂಗಾಮು,Rabi season,SEASON_RABI,activity,Karnataka Statewide,ಹಿಂಗಾರಿ,ಹಿಂಗಾರು ಹಂಗಾಮಿಗೆ ಬೀಜ ವಿತರಣೆ,Karnataka Dept of Agriculture,verified,Karnataka post-monsoon cropping season
+VOC010,ಮುಂಗಾರು,ಮುಂಗಾರು ಹಂಗಾಮು,Kharif season,SEASON_KHARIF,activity,Karnataka Statewide,ಮುಂಗಾರಿ,ಮುಂಗಾರು ಮಳೆ ಉತ್ತಮವಾಗಿದೆ,Karnataka Dept of Agriculture,verified,Karnataka monsoon cropping season
+VOC011,ನೋಡ್ರೀ,ನೋಡಿ,Look / Listen,DISCOURSE_MARKER,activity,North Karnataka,ನೋಡ್ರಿ,ನೋಡ್ರೀ ಸಾಹೇಬ್ರ ನಮಗೆ ಸಬ್ಸಿಡಿ ಬೇಕು,Regional Native Speaker Panel,verified,North Karnataka honorific discourse particle
+VOC012,ಹೌದ್ರೀ,ಹೌದು,Yes indeed,AFFIRMATION_MARKER,activity,North Karnataka,ಹೌದ್ರಿ,ಹೌದ್ರೀ ನಾನೇ ಮಾಲೀಕ,Regional Native Speaker Panel,verified,Respectful affirmation in North Karnataka
+VOC013,ತಿಳಿಸಿ,ತಿಳಿಸಿ,Please explain,REQUEST_MARKER,activity,South Karnataka,ಹೇಳಿ,ಯಾವ ಯೋಜನೆ ಸಿಗುತ್ತದೆ ತಿಳಿಸಿ,Regional Native Speaker Panel,verified,Respectful enquiry in South Karnataka
+VOC014,ಗದ್ದೆ,ಭತ್ತದ ಗದ್ದೆ,Paddy field / wetland,LAND_WETLAND,input,South Karnataka,ಗದ್ದೆ ಬಯಲು,ಗದ್ದೆಯಲ್ಲಿ ನೀರು ನಿಂತಿದೆ,Regional Native Speaker Panel,verified,Wetland cultivation in Mysuru / Mandya belt
+VOC015,ಬೆಳಿಲಿಕತ್ತೇನಿ,ಬೆಳೆಯುತ್ತಿದ್ದೇನೆ,am cultivating,CULTIVATION_VERB,verb,North Karnataka,ಬೆಳಿಲಿಕತ್ತೀನಿ; ಬೆಳಿಲಿಕ್ಕೆತ್ತೀನಿ; ಬೆಳೀತೀನಿ,ನಮ್ಮ ಹೊಲದಾಗ ಶೇಂಗಾ ಬೆಳಿಲಿಕತ್ತೇನಿ,Regional Native Speaker Panel,verified,Continuous aspect verb in North Karnataka
+VOC016,ಸಿಗತೈತಿ,ಸಿಗುತ್ತದೆ,is available / will receive,AVAILABILITY_VERB,verb,North Karnataka,ಸಿಗ್ತೈತಿ; ಸಿಗತೈತೆ,ನನಗೆ ಯಾವ ಸಬ್ಸಿಡಿ ಸಿಗತೈತಿ,Regional Native Speaker Panel,verified,Eligibility and availability verb marker
+VOC017,ಮಾಡೇನಿ,ಮಾಡಿದ್ದೇನೆ,have done,COMPLETION_VERB,verb,North Karnataka,ಮಾಡಿನಿ; ಮಾಡ್ಯಾನಿ,ಹೊಲದಾಗ ಬಿತ್ತನೆ ಮಾಡೇನಿ,Regional Native Speaker Panel,verified,Past perfective verb marker in North Karnataka
+VOC018,ಜಮೀನ್ ಐತಿ,ಜಮೀನು ಇದೆ,have farmland,LAND_POSSESSION,phrase,North Karnataka,ಜಮೀನು ಐತಿ; ಹೊಲ ಐತಿ,ನನ್ನ ಕಡೆ ಮೂರು ಎಕರೆ ಜಮೀನ್ ಐತಿ,Regional Native Speaker Panel,verified,Land possession expression
+VOC019,ತರಿ,ನೀರಾವರಿ ಜಮೀನು,Irrigated wetland,LAND_IRRIGATED,input,South Karnataka,ತರಿ ಭೂಮಿ; ತರಿ ಜಮೀನು,ನಾಲ್ಕು ಎಕರೆ ತರಿ ಜಮೀನು ಇದೆ,Karnataka Land Records,verified,Wetland/irrigated land term in South Karnataka
+VOC020,ಬಾಗಾಯ್ತು,ತೋಟಗಾರಿಕೆ ಜಮೀನು,Horticultural garden,LAND_GARDEN,input,Karnataka Statewide,ಬಾಗಾಯತ್,ತೆಂಗು ಮತ್ತು ಅಡಿಕೆ ಬಾಗಾಯ್ತು ಜಮೀನು,Horticulture Dept Karnataka,verified,Horticulture plantation terminology
+VOC021,ಕಡಲೆಕಾಯಿ,ಕಡಲೆಕಾಯಿ,Groundnut,CROP_GROUNDNUT,crop,South Karnataka,ನೆಲಗಡಲೆ,ಕಡಲೆಕಾಯಿ ಬೆಳೆಗೆ ಎಲೆಚುಕ್ಕೆ ರೋಗ,UAS Bengaluru,verified,South Karnataka crop terminology for groundnut
+VOC022,ರಾಗಿ,ರಾಗಿ,Finger millet,CROP_RAGI,crop,South Karnataka,ರಾಗಿ ಬೆಳೆ,ದಕ್ಷಿಣ ಕರ್ನಾಟಕದ ಮುಖ್ಯ ಬೆಳೆ ರಾಗಿ,UAS Bengaluru,verified,Premier staple crop of South Karnataka
+VOC023,ಜೋಳ,ಜೋಳ,Sorghum / Jowar,CROP_JOWAR,crop,North Karnataka,ಬಿಳಿಜೋಳ; ಜೋಳದ ತೆನೆ,ಹಿಂಗಾರಿನಲ್ಲಿ ಬಿಳಿಜೋಳ ಬಿತ್ತನೆ,UAS Dharwad,verified,Primary food grain of North Karnataka
+VOC024,ಭತ್ತ,ಭತ್ತ,Paddy / Rice,CROP_PADDY,crop,Karnataka Statewide,ಭತ್ತದ ಪೈರು,ಕಾವೇರಿ ಜಲಾನಯನ ಪ್ರದೇಶದಲ್ಲಿ ಭತ್ತದ ಸಾಗುವಳಿ,Karnataka Dept of Agriculture,verified,Staple wetland cereal crop
+VOC025,ಕೊಟ್ಟಿಗೆ ಗೊಬ್ಬರ,ಸಾವಯವ ಗೊಬ್ಬರ,Farmyard manure,INPUT_FYM,input,Karnataka Statewide,ಸೆಗಣಿ ಗೊಬ್ಬರ; ಹಟ್ಟಿ ಗೊಬ್ಬರ,ಬಿತ್ತನೆಗೆ ಮುನ್ನ ಕೊಟ್ಟಿಗೆ ಗೊಬ್ಬರ ಹಾಕಿ,UAS Agronomy Dept,verified,Organic farmyard manure guidance
+VOC026,ಯೂರಿಯಾ,ಯೂರಿಯಾ ರಸಗೊಬ್ಬರ,Urea chemical fertilizer,INPUT_UREA,input,Karnataka Statewide,ಯೂರಿಯ,ಮೇಲುಗೊಬ್ಬರವಾಗಿ ಯೂರಿಯಾ ಸಿಂಪಡಿಸಿ,IFFCO Karnataka,verified,Nitrogenous fertilizer input
+VOC027,ಡಿಎಪಿ,ಡಿಎಪಿ ರಸಗೊಬ್ಬರ,DAP fertilizer,INPUT_DAP,input,Karnataka Statewide,ಡಿ ಎ ಪಿ,ಬಿತ್ತನೆ ಸಮಯದಲ್ಲಿ ಡಿಎಪಿ ಬಳಸಿ,IFFCO Karnataka,verified,Phosphatic fertilizer input
+VOC028,ಕೀಟಬಾಧೆ,ಕೀಟ ಮತ್ತು ರೋಗ,Pest infestation,PEST_INFESTATION,activity,Karnataka Statewide,ಹುಳು ರೋಗ; ಕೀಟ ರೋಗ,ಬೆಳೆಗೆ ಕೀಟಬಾಧೆ ಕಂಡುಬಂದಿದೆ,UAS Plant Pathology,verified,Pest and disease diagnosis terminology
+VOC029,ಪಹಣಿ,ಆರ್‌ಟಿಸಿ ದಾಖಲೆ,RTC land ownership document,DOC_RTC,input,Karnataka Statewide,ಆರ್‌ಟಿಸಿ; ಪಹಣಿ ಪತ್ರ,ಯೋಜನೆಗೆ ಪಹಣಿ ಪತ್ರ ಸಲ್ಲಿಸಿ,Bhoomi Portal Karnataka,verified,Revenue landholding title extract
+VOC030,ಸಂರಕ್ಷಣೆ,ಬೆಳೆ ವಿಮೆ ಪೋರ್ಟಲ್,Samrakshane crop insurance portal,PORTAL_INSURANCE,input,Karnataka Statewide,ಸಂರಕ್ಷಣೆ ಪೋರ್ಟಲ್,ಸಂರಕ್ಷಣೆ ಪೋರ್ಟಲ್‌ನಲ್ಲಿ ಬೆಳೆ ವಿಮೆ ನೋಂದಾಯಿಸಿ,Karnataka Samrakshane PMFBY,verified,Official Karnataka crop insurance portal

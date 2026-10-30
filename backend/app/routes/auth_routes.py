@@ -22,12 +22,23 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
     auto_region = get_region_for_district(data.district)
     selected_speech = data.preferred_speech_style if data.preferred_speech_style else auto_region
 
+    clean_name = data.name.strip()
+    username = data.username.strip() if data.username and data.username.strip() else clean_name.lower().replace(" ", "_")
+    email = data.email.strip() if data.email and data.email.strip() else None
+
     # Create User
     new_user = User(
-        name=data.name.strip(),
+        name=clean_name,
+        username=username,
+        email=email,
         mobile=data.mobile.strip(),
         password_hash=hash_password(data.password),
-        role="farmer"
+        role="farmer",
+        theme_preference="light",
+        voice_gender_preference="female",
+        auto_voice_response=True,
+        voice_input_enabled=True,
+        speech_speed=1.0
     )
     db.add(new_user)
     db.commit()
@@ -36,6 +47,7 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
     # Create associated Farmer Profile
     profile = FarmerProfile(
         user_id=new_user.id,
+        email=email,
         district=data.district.strip(),
         taluk=data.taluk.strip(),
         village=data.village.strip() if data.village else None,
@@ -44,7 +56,10 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
         land_ownership="Own",
         irrigation_type="Rainfed",
         farmer_category="Small & Marginal",
-        crops_grown="[]"
+        crops_grown="[]",
+        auto_voice_response=True,
+        voice_input_enabled=True,
+        speech_speed=1.0
     )
     db.add(profile)
     db.commit()
@@ -89,5 +104,10 @@ def get_me(current_user: User = Depends(require_current_user)):
         "district": profile.district if profile else "Belagavi",
         "taluk": profile.taluk if profile else "",
         "regional_speech_preference": profile.regional_speech_preference if profile else "Standard Kannada",
-        "preferred_language": profile.preferred_language if profile else "kn"
+        "preferred_language": profile.preferred_language if profile else "kn",
+        "theme_preference": getattr(current_user, "theme_preference", "light") or "light",
+        "voice_gender_preference": getattr(current_user, "voice_gender_preference", "female") or "female",
+        "auto_voice_response": getattr(current_user, "auto_voice_response", True),
+        "voice_input_enabled": getattr(current_user, "voice_input_enabled", True),
+        "speech_speed": getattr(current_user, "speech_speed", 1.0) or 1.0
     }

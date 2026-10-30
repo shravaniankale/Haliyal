@@ -22,7 +22,7 @@ import { ChatMessage } from '../types';
 type ConversationState = 'idle' | 'listening' | 'processing' | 'speaking' | 'interrupted' | 'error';
 
 export const VoiceAssistantWidget: React.FC = () => {
-  const { language, regionalDialect } = useLanguage();
+  const { language, regionalDialect, voiceGender, speechSpeed, autoVoiceResponse, voiceInputEnabled } = useLanguage();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
 
@@ -30,13 +30,15 @@ export const VoiceAssistantWidget: React.FC = () => {
   const [convState, setConvState] = useState<ConversationState>('idle');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
-  const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [isAudioMuted, setIsAudioMuted] = useState(!autoVoiceResponse);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [sessionId] = useState(() => 'sess_' + Math.random().toString(36).substring(2, 9));
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  const farmerUsername = user?.username || user?.name || profile?.name || 'ರೈತ ಮಿತ್ರ';
 
   // Initialize Web Speech Recognition for Kannada
   useEffect(() => {
@@ -47,8 +49,7 @@ export const VoiceAssistantWidget: React.FC = () => {
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = false;
-      // Configure Kannada (kn-IN)
-      recognition.lang = 'kn-IN';
+      recognition.lang = language === 'en' ? 'en-IN' : 'kn-IN';
 
       recognition.onstart = () => {
         setConvState('listening');
@@ -75,27 +76,26 @@ export const VoiceAssistantWidget: React.FC = () => {
       };
 
       recognition.onend = () => {
-        // If it wasn't transitioned to processing, set back to idle
         setConvState((prev) => (prev === 'listening' ? 'idle' : prev));
       };
 
       recognitionRef.current = recognition;
     }
 
-    // Initial greeting
+    // Initial greeting addressing username without interrogating
     const greetingTextKn =
       regionalDialect === 'North Karnataka'
-        ? 'ನಮಸ್ಕಾರ್ರೀ ಅಪ್ಪಾ, ನಮ್ದು ಕೃಷಿ ಮಿತ್ರ AI ಸಹಾಯಕ ನೋಡ್ರೀ. ನಿಮ್ಗೆ ಯಾವ ಸರ್ಕಾರಿ ಯೋಜನೆ ಅಥವಾ ಬೆಳೆ ಮಾಹಿತಿ ಬೇಕ್ರಿ? ಮೈಕ್ ಬಟನ್ ಒತ್ತಿ ಕನ್ನಡದಲ್ಲೇ ಕೇಳ್ರಿ!'
-        : 'ನಮಸ್ಕಾರ, ಕೃಷಿ ಮಿತ್ರ AI ಸಹಾಯಕ್ಕೆ ಸ್ವಾಗತ. ನಿಮಗೆ ಯಾವ ಯೋಜನೆ ಅಥವಾ ಕೃಷಿ ಮಾಹಿತಿ ಬೇಕು? ಮೈಕ್ ಒತ್ತಿ ಮಾತನಾಡಿ.';
+        ? `ನಮಸ್ಕಾರ್ರೀ ${farmerUsername} ಅವರೇ! ಕೃಷಿ ಮಿತ್ರಕ್ಕೆ ಸ್ವಾಗತ ನೋಡ್ರೀ. ಇಂದು ನಿಮಗೆ ಯಾವ ವಿಷಯದಲ್ಲಿ ಸಹಾಯ ಬೇಕ್ರಿ?`
+        : `ನಮಸ್ಕಾರ ${farmerUsername} ಅವರೇ! ಕೃಷಿ ಮಿತ್ರಕ್ಕೆ ಸ್ವಾಗತ. ಇಂದು ನಿಮಗೆ ಯಾವ ವಿಷಯದಲ್ಲಿ ಸಹಾಯ ಬೇಕು?`;
 
     setMessages([
       {
         sender: 'assistant',
-        text: 'Welcome to Krishi Mitra AI! How can I assist you with schemes, loans, or crop guidance? Speak in Kannada or type below.',
+        text: `Hello ${farmerUsername}! Welcome to Krishi Mitra. What would you like help with today?`,
         text_kn: greetingTextKn,
       },
     ]);
-  }, [regionalDialect]);
+  }, [regionalDialect, language, farmerUsername]);
 
   // Scroll to bottom on new message
   useEffect(() => {
@@ -124,13 +124,13 @@ export const VoiceAssistantWidget: React.FC = () => {
       return;
     }
 
-    // Stop existing audio
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
     }
 
     const audio = new Audio(audioUrl);
+    audio.playbackRate = speechSpeed || 1.0;
     audioRef.current = audio;
 
     setConvState('speaking');
@@ -164,6 +164,11 @@ export const VoiceAssistantWidget: React.FC = () => {
 
   // Toggle voice listening
   const toggleListening = () => {
+    if (!voiceInputEnabled) {
+      setErrorMessage(language === 'kn' ? 'ಧ್ವನಿ ಇನ್‌ಪುಟ್ ಅನ್ನು ಪ್ರೊಫೈಲ್‌ನಲ್ಲಿ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ.' : 'Voice input is disabled in settings.');
+      return;
+    }
+
     if (convState === 'speaking') {
       handleInterrupt();
       return;
@@ -181,7 +186,7 @@ export const VoiceAssistantWidget: React.FC = () => {
 
     if (recognitionRef.current) {
       try {
-        recognitionRef.current.lang = 'kn-IN';
+        recognitionRef.current.lang = language === 'en' ? 'en-IN' : 'kn-IN';
         recognitionRef.current.start();
         setConvState('listening');
       } catch (err) {
@@ -197,7 +202,6 @@ export const VoiceAssistantWidget: React.FC = () => {
   const handleSendMessage = async (textToSend: string) => {
     if (!textToSend.trim()) return;
 
-    // Stop speaking if running
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -221,6 +225,9 @@ export const VoiceAssistantWidget: React.FC = () => {
         session_id: sessionId,
         language: language,
         regional_preference: regionalDialect,
+        voice_gender: voiceGender,
+        speech_speed: speechSpeed,
+        auto_voice_response: autoVoiceResponse
       });
 
       const botMsg: ChatMessage = {
@@ -234,8 +241,8 @@ export const VoiceAssistantWidget: React.FC = () => {
 
       setMessages((prev) => [...prev, botMsg]);
 
-      // Automatic Two-Way Audio Playback
-      if (response.audio_url && !isAudioMuted) {
+      // Automatic Two-Way Audio Playback (respecting autoVoiceResponse)
+      if (response.audio_url && !isAudioMuted && autoVoiceResponse) {
         playKannadaAudio(response.audio_url);
       } else {
         setConvState('idle');
@@ -256,7 +263,7 @@ export const VoiceAssistantWidget: React.FC = () => {
           {/* Pulsing Helper Tooltip */}
           <div className="hidden sm:flex items-center gap-2 bg-[#174C36] text-white text-xs px-3.5 py-2 rounded-full shadow-lg border border-[#75A96A]/40 animate-bounce">
             <Sparkles className="w-3.5 h-3.5 text-[#D8AA48]" />
-            <span className="font-kannada font-medium">ಕನ್ನಡದಲ್ಲಿ ಮಾತನಾಡಿ</span>
+            <span className="font-kannada font-medium">ಕನ್ನಡ ಧ್ವನಿ ಸಹಾಯಕ</span>
           </div>
 
           <button
@@ -304,7 +311,7 @@ export const VoiceAssistantWidget: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <h3 className="font-extrabold text-sm tracking-wide">KRISHI MITRA AI</h3>
                   <span className="text-[10px] bg-[#D8AA48] text-[#123B2B] font-bold px-1.5 py-0.2 rounded">
-                    ಕನ್ನಡ AI
+                    {voiceGender === 'male' ? 'ಪುರುಷ ಧ್ವನಿ' : 'ಮಹಿಳಾ ಧ್ವನಿ'}
                   </span>
                 </div>
                 <p className="text-[11px] text-[#EAF3E9]/80 font-kannada">
@@ -314,7 +321,7 @@ export const VoiceAssistantWidget: React.FC = () => {
                     ? 'ಉತ್ತರಿಸುತ್ತಿದೆ... (Speaking)'
                     : convState === 'processing'
                     ? 'ಯೋಚಿಸುತ್ತಿದೆ... (Processing)'
-                    : `${regionalDialect === 'North Karnataka' ? 'ಉತ್ತರ ಕರ್ನಾಟಕ' : 'ದಕ್ಷಿಣ ಕರ್ನಾಟಕ'} ಶೈಲಿ`}
+                    : `${regionalDialect === 'North Karnataka' ? 'ಉತ್ತರ ಕರ್ನಾಟಕ' : regionalDialect === 'South Karnataka' ? 'ದಕ್ಷಿಣ ಕರ್ನಾಟಕ' : 'ಶಿಷ್ಟ ಕನ್ನಡ'} ಶೈಲಿ`}
                 </p>
               </div>
             </div>
@@ -397,13 +404,13 @@ export const VoiceAssistantWidget: React.FC = () => {
                   >
                     {/* Kannada text */}
                     {msg.text_kn && (
-                      <p className="font-kannada font-medium text-sm leading-relaxed mb-1.5">
+                      <p className="font-kannada font-medium text-sm leading-relaxed mb-1.5 whitespace-pre-line">
                         {msg.text_kn}
                       </p>
                     )}
                     {/* English translation */}
                     {language === 'en' && msg.text !== msg.text_kn && (
-                      <p className="text-xs text-[#69766D] dark:text-[#9BB0A4] pt-1 border-t border-[#E2E8DF] dark:border-[#1E382B]">
+                      <p className="text-xs text-[#69766D] dark:text-[#9BB0A4] pt-1 border-t border-[#E2E8DF] dark:border-[#1E382B] whitespace-pre-line">
                         {msg.text}
                       </p>
                     )}
@@ -472,7 +479,7 @@ export const VoiceAssistantWidget: React.FC = () => {
               {/* Text Input */}
               <input
                 type="text"
-                placeholder="ಕನ್ನಡದಲ್ಲಿ ಟೈಪ್ ಮಾಡಿ ಅಥವಾ ಮಾತನಾಡಿ..."
+                placeholder={language === 'kn' ? 'ಕನ್ನಡದಲ್ಲಿ ಟೈಪ್ ಮಾಡಿ ಅಥವಾ ಮಾತನಾಡಿ...' : 'Type or speak in Kannada/English...'}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 className="flex-1 px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-[#E2E8DF] dark:border-[#1E382B] bg-[#F7F9F5] dark:bg-[#0B1711] text-[#19251E] dark:text-[#EDF3EF] focus:outline-none focus:ring-1 focus:ring-[#2F7650] font-kannada"
@@ -491,9 +498,9 @@ export const VoiceAssistantWidget: React.FC = () => {
             {/* Micro dialect indicator footer */}
             <div className="flex items-center justify-between text-[10px] text-[#69766D] dark:text-[#9BB0A4] pt-2 px-1">
               <span className="font-kannada">
-                ಧ್ವನಿ ಶೈಲಿ: <span className="font-semibold text-[#174C36] dark:text-[#75A96A]">{regionalDialect}</span>
+                ಧ್ವನಿ: <span className="font-semibold text-[#174C36] dark:text-[#75A96A]">{voiceGender === 'male' ? 'Gagan (ಪುರುಷ)' : 'Sapna (ಮಹಿಳೆ)'}</span> • <span className="font-semibold">{regionalDialect}</span>
               </span>
-              <span>Kannada Neural Voice Active</span>
+              <span>Kannada Neural Voice</span>
             </div>
           </div>
         </div>
