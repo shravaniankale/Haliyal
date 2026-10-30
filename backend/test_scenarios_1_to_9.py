@@ -6,6 +6,7 @@ import sys
 import io
 import requests
 import json
+import uuid
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
@@ -65,7 +66,7 @@ def run_tests():
     # SCENARIO 3: Progressive 7-Question Onboarding
     # -------------------------------------------------------------------------
     print("\n[SCENARIO 3] Testing Progressive 7-Question Onboarding Conversation...")
-    session_id = "test_onboard_sess_003"
+    session_id = f"test_onboard_sess_{uuid.uuid4().hex[:8]}"
     
     # 1. District
     step1 = requests.post(f"{BASE_URL}/chat", json={
@@ -83,53 +84,62 @@ def run_tests():
         "regional_preference": "North Karnataka"
     }).json()
     print("  2. Taluk -> Next Question:", step2["reply_kn"][:60], "...")
-    assert "ಬೆಳೆ" in step2["reply_kn"] or "crop" in step2["reply"].lower()
+    assert "ಎಕರೆ" in step2["reply_kn"] or "acres" in step2["reply"].lower() or "ಹೊಲ" in step2["reply_kn"]
 
-    # 3. Crop
+    # 3. Land size
     step3 = requests.post(f"{BASE_URL}/chat", json={
-        "message": "ನಾನು ಶೇಂಗಾ ಬೆಳೆಯುತ್ತಿದ್ದೇನೆ",
-        "session_id": session_id,
-        "regional_preference": "North Karnataka"
-    }).json()
-    print("  3. Crop -> Next Question:", step3["reply_kn"][:60], "...")
-    assert "ಜಮೀನು" in step3["reply_kn"] or "land" in step3["reply"].lower()
-
-    # 4. Land size
-    step4 = requests.post(f"{BASE_URL}/chat", json={
         "message": "ನನ್ನ ಬಳಿ ೪ ಎಕರೆ ಜಮೀನಿದೆ",
         "session_id": session_id,
         "regional_preference": "North Karnataka"
     }).json()
-    print("  4. Land Size -> Next Question:", step4["reply_kn"][:60], "...")
-    assert "ಸ್ವಂತ" in step4["reply_kn"] or "own" in step4["reply"].lower()
+    print("  3. Land Size -> Next Question:", step3["reply_kn"][:60], "...")
+    assert "ಸ್ವಂತ" in step3["reply_kn"] or "own" in step3["reply"].lower()
 
-    # 5. Ownership
-    step5 = requests.post(f"{BASE_URL}/chat", json={
+    # 4. Ownership
+    step4 = requests.post(f"{BASE_URL}/chat", json={
         "message": "ಸ್ವಂತ ಜಮೀನು",
         "session_id": session_id,
         "regional_preference": "North Karnataka"
     }).json()
-    print("  5. Ownership -> Next Question:", step5["reply_kn"][:60], "...")
-    assert "ನೀರಾವರಿ" in step5["reply_kn"] or "irrigation" in step5["reply"].lower()
+    print("  4. Ownership -> Next Question:", step4["reply_kn"][:60], "...")
+    assert "ವರ್ಗ" in step4["reply_kn"] or "category" in step4["reply"].lower() or "ರೈತ" in step4["reply_kn"]
 
-    # 6. Irrigation
-    step6 = requests.post(f"{BASE_URL}/chat", json={
-        "message": "ಖುಷ್ಕಿ ಮಳೆ ಆಶ್ರಿತ",
-        "session_id": session_id,
-        "regional_preference": "North Karnataka"
-    }).json()
-    print("  6. Irrigation -> Next Question:", step6["reply_kn"][:60], "...")
-    assert "ವರ್ಗ" in step6["reply_kn"] or "category" in step6["reply"].lower()
-
-    # 7. Category
-    step7 = requests.post(f"{BASE_URL}/chat", json={
+    # 5. Category
+    step5 = requests.post(f"{BASE_URL}/chat", json={
         "message": "ಸಣ್ಣ ರೈತರು",
         "session_id": session_id,
         "regional_preference": "North Karnataka"
     }).json()
-    print("  7. Category -> Final Summary & Schemes:", step7["reply_kn"][:80], "...")
-    assert "ವಿವರ" in step7["reply_kn"] or "summary" in step7["reply"].lower()
-    print("  ✓ Full 7-question progressive onboarding completed successfully!")
+    print("  5. Category -> Next Question:", step5["reply_kn"][:60], "...")
+    assert "ಬೆಳೆ" in step5["reply_kn"] or "crop" in step5["reply"].lower()
+
+    # 6. Primary Crop
+    step6 = requests.post(f"{BASE_URL}/chat", json={
+        "message": "ನಾವು ಶೇಂಗಾ ಬೆಳೆಯುತ್ತೇವೆ",
+        "session_id": session_id,
+        "regional_preference": "North Karnataka"
+    }).json()
+    print("  6. Crop -> Next Question:", step6["reply_kn"][:60], "...")
+    assert "ಬೆಳೆ" in step6["reply_kn"] or "crop" in step6["reply"].lower()
+
+    # 7. Other crops (optional)
+    step7 = requests.post(f"{BASE_URL}/chat", json={
+        "message": "ಯಾವುದೂ ಇಲ್ಲ, ಕೇವಲ ಶೇಂಗಾ ಮಾತ್ರ",
+        "session_id": session_id,
+        "regional_preference": "North Karnataka"
+    }).json()
+    print("  7. Other Crops -> Next Question:", step7["reply_kn"][:60], "...")
+    assert "ನೀರಾವರಿ" in step7["reply_kn"] or "irrigation" in step7["reply"].lower()
+
+    # 8. Irrigation
+    step8 = requests.post(f"{BASE_URL}/chat", json={
+        "message": "ಕೊಳವೆಬಾವಿ ಬೋರ್‌ವೆಲ್ ನೀರಾವರಿ ಇದೆ",
+        "session_id": session_id,
+        "regional_preference": "North Karnataka"
+    }).json()
+    print("  8. Irrigation -> Next Step:", step8["reply_kn"][:80], "...")
+    assert "ಮಣ್ಣು" in step8["reply_kn"] or "ಸರಿ" in step8["reply_kn"] or "ವಿವರ" in step8["reply_kn"] or "soil" in step8["reply"].lower()
+    print("  ✓ Full progressive onboarding completed successfully!")
 
     # -------------------------------------------------------------------------
     # SCENARIO 4: Scheme Recommendations with Verified Rules & RAG Citations

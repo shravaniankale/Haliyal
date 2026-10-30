@@ -78,14 +78,15 @@ class DeterministicEligibilityEngine:
         # 4. Evaluate Farmer Category Rule
         if "All" not in eligible_categories:
             norm_cats = [c.lower() for c in eligible_categories]
-            if farmer_category.lower() in norm_cats:
+            fc_lower = farmer_category.lower()
+            if any(fc_lower in cat or cat in fc_lower for cat in norm_cats):
                 matched.append(f"Farmer category '{farmer_category}' qualifies under targeted categories.")
+            elif any("small" in cat for cat in norm_cats) and (farmer_land is not None and farmer_land <= 5.0):
+                matched.append(f"Landholding of {farmer_land} acres qualifies as Small & Marginal farmer.")
+            elif "general" in norm_cats:
+                matched.append(f"Farmer category '{farmer_category}' qualifies under General broad eligibility.")
             else:
-                # If scheme specifically targets small & marginal and land <= 5 acres, auto match
-                if "small & marginal" in norm_cats and (farmer_land is not None and farmer_land <= 5.0):
-                    matched.append(f"Landholding of {farmer_land} acres qualifies as Small & Marginal farmer.")
-                else:
-                    failing.append(f"Scheme is targeted to: {', '.join(eligible_categories)}. Stated category is '{farmer_category}'.")
+                failing.append(f"Scheme is targeted to: {', '.join(eligible_categories)}. Stated category is '{farmer_category}'.")
 
         # 5. Determine Final Evaluation Status
         if failing:

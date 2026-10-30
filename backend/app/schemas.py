@@ -14,6 +14,14 @@ class UserRegister(BaseModel):
     village: Optional[str] = None
     preferred_language: Optional[str] = "kn"
     preferred_speech_style: Optional[str] = None  # North Karnataka, South Karnataka, Standard Kannada
+    regional_speech_preference: Optional[str] = None
+    land_acres: Optional[float] = None
+    land_ownership: Optional[str] = "Own"
+    farmer_category: Optional[str] = "Small & Marginal"
+    irrigation_type: Optional[str] = "Rainfed"
+    primary_crop: Optional[str] = None
+    crops_grown: Optional[List[str]] = None
+    crops: Optional[List[str]] = None
 
 class UserLogin(BaseModel):
     mobile: str
@@ -187,7 +195,7 @@ class SchemeUpdate(BaseModel):
 
 class SchemeResponse(SchemeBase):
     id: int
-    created_at: datetime
+    created_at: Optional[datetime] = None
     is_saved: bool = False
 
     class Config:
@@ -232,9 +240,9 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = "default-session"
     user_id: Optional[int] = None
     language: Optional[str] = "kn"
-    regional_preference: Optional[str] = "North Karnataka"
-    voice_gender: Optional[str] = "female"
-    speech_speed: Optional[float] = 1.0
+    regional_preference: Optional[str] = None
+    voice_gender: Optional[str] = None
+    speech_speed: Optional[float] = None
     auto_voice_response: Optional[bool] = True
 
 class ChatResponse(BaseModel):

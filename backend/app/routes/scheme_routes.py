@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -45,6 +46,7 @@ def format_scheme_response(scheme: Scheme, is_saved: bool = False) -> SchemeResp
         active_status=scheme.active_status,
         image_url=scheme.image_url,
         is_saved=is_saved,
+        created_at=getattr(scheme, "created_at", None) or datetime.utcnow(),
         scheme_code=getattr(scheme, "scheme_code", None),
         record_type=getattr(scheme, "record_type", "real_scheme"),
         benefit_amount=getattr(scheme, "benefit_amount", None),

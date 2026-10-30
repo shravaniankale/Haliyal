@@ -156,21 +156,21 @@ def update_farmer_profile(data: FarmerProfileUpdate, current_user: User = Depend
         profile.preferred_language = data.preferred_language
     if data.regional_speech_preference:
         profile.regional_speech_preference = data.regional_speech_preference
-    if data.land_acres is not None:
+    if "land_acres" in data.model_fields_set:
         profile.land_acres = data.land_acres
-    if data.land_ownership:
+    if "land_ownership" in data.model_fields_set:
         profile.land_ownership = data.land_ownership
-    if data.irrigation_type:
+    if "irrigation_type" in data.model_fields_set:
         profile.irrigation_type = data.irrigation_type
-    if data.farmer_category:
+    if "farmer_category" in data.model_fields_set:
         profile.farmer_category = data.farmer_category
-    if data.crops_grown is not None:
-        profile.crops_grown = json.dumps(data.crops_grown)
-    if data.primary_crop is not None:
-        clean_pc = data.primary_crop.strip()
-        profile.primary_crop = clean_pc if clean_pc else None
-    if data.secondary_crops is not None:
-        profile.secondary_crops = json.dumps(data.secondary_crops)
+    if "crops_grown" in data.model_fields_set:
+        profile.crops_grown = json.dumps(data.crops_grown) if data.crops_grown is not None else "[]"
+    if "primary_crop" in data.model_fields_set:
+        clean_pc = data.primary_crop.strip() if data.primary_crop else None
+        profile.primary_crop = clean_pc
+    if "secondary_crops" in data.model_fields_set:
+        profile.secondary_crops = json.dumps(data.secondary_crops) if data.secondary_crops is not None else "[]"
     if data.confirmed_fields is not None:
         profile.confirmed_fields = data.confirmed_fields
     if data.missing_fields is not None:
@@ -297,3 +297,16 @@ def delete_farmer_profile(
         "status": "success",
         "message": "Farmer profile and conversation records successfully deleted upon user request."
     }
+
+@router.get("/sessions", response_model=List[FarmerSessionResponse])
+def get_all_farmer_sessions(db: Session = Depends(get_db)):
+    """Retrieve all farmer conversation sessions from CSV/DB."""
+    return db.query(FarmerSession).all()
+
+@router.get("/sessions/{session_id}", response_model=FarmerSessionResponse)
+def get_farmer_session_by_id(session_id: str, db: Session = Depends(get_db)):
+    """Retrieve a specific farmer conversation session by session ID."""
+    sess = db.query(FarmerSession).filter(FarmerSession.farmer_session_id == session_id).first()
+    if not sess:
+        raise HTTPException(status_code=404, detail="Farmer session not found")
+    return sess

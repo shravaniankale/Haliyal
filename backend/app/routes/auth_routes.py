@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..database import get_db
@@ -45,6 +46,8 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
     db.refresh(new_user)
 
     # Create associated Farmer Profile
+    crops_list = getattr(data, "crops_grown", None) or getattr(data, "crops", None) or []
+    primary_c = getattr(data, "primary_crop", None) or (crops_list[0] if crops_list else None)
     profile = FarmerProfile(
         user_id=new_user.id,
         email=email,
@@ -53,10 +56,13 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
         village=data.village.strip() if data.village else None,
         preferred_language=data.preferred_language or "kn",
         regional_speech_preference=selected_speech,
-        land_ownership="Own",
-        irrigation_type="Rainfed",
-        farmer_category="Small & Marginal",
-        crops_grown="[]",
+        land_acres=getattr(data, "land_acres", None),
+        land_ownership=getattr(data, "land_ownership", "Own") or "Own",
+        irrigation_type=getattr(data, "irrigation_type", "Rainfed") or "Rainfed",
+        farmer_category=getattr(data, "farmer_category", "Small & Marginal") or "Small & Marginal",
+        primary_crop=primary_c,
+        crops_grown=json.dumps(crops_list),
+        confirmed_fields="district, taluk, land_acres, crop" if (primary_c and getattr(data, "land_acres", None)) else "",
         auto_voice_response=True,
         voice_input_enabled=True,
         speech_speed=1.0

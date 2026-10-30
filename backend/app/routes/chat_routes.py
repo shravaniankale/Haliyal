@@ -41,7 +41,8 @@ def handle_chat_message(
             user_id=user_id,
             title=initial_title,
             selected_language=data.language or "kn",
-            selected_voice=data.voice_gender or "female"
+            selected_voice=data.voice_gender or "female",
+            current_stage="COLLECT_DISTRICT"
         )
         db.add(conv)
         db.commit()
@@ -67,7 +68,7 @@ def handle_chat_message(
         except Exception:
             confirmed_dict = {}
 
-    current_stage = conv.current_stage or "COLLECT_DISTRICT"
+    current_stage = conv.current_stage if (conv.current_stage and conv.current_stage != "idle") else "COLLECT_DISTRICT"
 
     # 3. Load farmer profile for personalized recommendations
     farmer_profile_dict = None
@@ -79,20 +80,23 @@ def handle_chat_message(
         except Exception:
             crops_list = []
 
+        conf_str = p.confirmed_fields or ""
+        is_conf = bool(conf_str and "district" in conf_str and "crop" in conf_str)
+
         farmer_profile_dict = {
             "name": current_user.name,
             "username": getattr(current_user, "username", None) or current_user.name,
-            "district": p.district,
-            "taluk": p.taluk,
+            "district": p.district if (is_conf or "district" in conf_str or not conf_str) else None,
+            "taluk": p.taluk if (is_conf or "taluk" in conf_str) else None,
             "village": getattr(p, "village", None),
-            "land_acres": p.land_acres,
-            "land_ownership": p.land_ownership,
-            "irrigation": p.irrigation_type,
-            "farmer_category": p.farmer_category,
-            "primary_crop": getattr(p, "primary_crop", None) or (crops_list[0] if crops_list else None),
-            "crop": getattr(p, "primary_crop", None) or (crops_list[0] if crops_list else None),
-            "crops": crops_list,
-            "soil_type": getattr(p, "soil_type", None),
+            "land_acres": p.land_acres if (is_conf or "land" in conf_str) else None,
+            "land_ownership": p.land_ownership if (is_conf or "ownership" in conf_str) else None,
+            "irrigation": p.irrigation_type if (is_conf or "irrigation" in conf_str) else None,
+            "farmer_category": p.farmer_category if (is_conf or "category" in conf_str) else None,
+            "primary_crop": (getattr(p, "primary_crop", None) or (crops_list[0] if crops_list else None)) if (is_conf or "crop" in conf_str) else None,
+            "crop": (getattr(p, "primary_crop", None) or (crops_list[0] if crops_list else None)) if (is_conf or "crop" in conf_str) else None,
+            "crops": crops_list if (is_conf or "crop" in conf_str) else [],
+            "soil_type": getattr(p, "soil_type", None) if (is_conf or "soil" in conf_str) else None,
             "crop_stage": getattr(p, "crop_stage", None),
             "season": getattr(p, "agricultural_season", None),
             "regional_speech_preference": p.regional_speech_preference,
@@ -135,15 +139,22 @@ def handle_chat_message(
 
     # 7. Synthesize Neural Audio
     voice_gender = (
-        getattr(data, "voice_gender", None)
-        or (farmer_profile_dict.get("voice_gender_preference") if farmer_profile_dict else "female")
+        data.voice_gender
+        or (farmer_profile_dict.get("voice_gender_preference") if farmer_profile_dict else None)
+        or (getattr(current_user, "voice_gender_preference", None) if current_user else None)
+        or (conv.selected_voice if conv and conv.selected_voice else None)
         or "female"
     )
     pref_lang = getattr(data, "language", "kn") or "kn"
     spoken_text = reply_kn if pref_lang == "kn" else reply_en
 
     # Speed resolution
-    speed = getattr(data, "speech_speed", None) or (farmer_profile_dict.get("speech_speed") if farmer_profile_dict else 1.0) or 1.0
+    speed = (
+        data.speech_speed
+        or (farmer_profile_dict.get("speech_speed") if farmer_profile_dict else None)
+        or (getattr(current_user, "speech_speed", None) if current_user else None)
+        or 1.0
+    )
 
     # Auto voice response preference check
     auto_voice = True
@@ -518,10 +529,16 @@ def start_new_conversation(
             f"1. Government schemes\n2. Crop insurance\n3. Fertilizer recommendations\n4. Crop guidance\n5. Irrigation guidance\n6. Weather information\n7. Pest & disease management\n8. Agricultural loans\n9. Market prices\n10. Complete agricultural assistance\n\nYou can speak naturally or choose an option."
         )
     else:
-        # Strip unconfirmed defaults so the state machine asks each question sequentially
-        confirmed_set = set([f.strip() for f in p.confirmed_fields.split(",")]) if (current_user and current_user.profile and current_user.profile.confirmed_fields) else set()
-        for k in ["land_ownership", "farmer_category", "primary_crop", "crop", "irrigation", "soil_type", "crop_stage", "season"]:
-            if k not in confirmed_set:
+        # Check what fields are confirmed or missing
+        confirmed_set = set([f.strip() for f in p.confirmed_fields.split(",") if f.strip()]) if (current_user and current_user.profile and current_user.profile.confirmed_fields) else set()
+        missing_set = set([f.strip() for f in p.missing_fields.split(",") if f.strip()]) if (current_user and current_user.profile and current_user.profile.missing_fields) else set()
+
+        for k in ["district", "taluk", "land_acres", "land_ownership", "farmer_category", "primary_crop", "crop", "irrigation", "soil_type", "crop_stage", "season"]:
+            if k in missing_set:
+                saved_details.pop(k, None)
+            elif confirmed_set and k not in confirmed_set and not any(k in cs for cs in confirmed_set):
+                saved_details.pop(k, None)
+            elif not confirmed_set and not saved_details.get(k):
                 saved_details.pop(k, None)
 
         missing_stage = AgriculturalConversationalAgent.get_first_missing_stage(saved_details)

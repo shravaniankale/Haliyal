@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Mic,
   MicOff,
@@ -49,7 +50,8 @@ export const VoiceAssistantPage: React.FC = () => {
     voiceAssistantEnabled,
     setVoiceAssistantEnabled
   } = useSettings();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
+  const navigate = useNavigate();
 
   // Assistant states
   const [convState, setConvState] = useState<ConversationState>('idle');
@@ -225,6 +227,26 @@ export const VoiceAssistantPage: React.FC = () => {
   const farmerUsername = user?.username || user?.name || profile?.name || 'ರೈತ ಮಿತ್ರ';
 
   // 1. Initialize First Greeting & Natural Voice Conversation on Mount
+    // Repeat Latest Audio Question
+  const handleRepeatQuestion = () => {
+    const lastBotMsg = [...messages].reverse().find((m) => m.sender === 'assistant' && m.audio_url);
+    if (lastBotMsg && lastBotMsg.audio_url) {
+      playAudio(lastBotMsg.audio_url, lastBotMsg.id || Date.now());
+    }
+  };
+
+  // Quick Action Voice Prompts for direct voice initiation
+  const quickVoicePrompts = [
+    { kn: "ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು", en: "Govt Schemes", prompt: "ನನಗೆ ಸರ್ಕಾರಿ ಯೋಜನೆಗಳ ಬಗ್ಗೆ ತಿಳಿಸಿ" },
+    { kn: "ಬೆಳೆ ವಿಮೆ (PMFBY)", en: "Crop Insurance", prompt: "ನನ್ನ ಬೆಳೆಗೆ ಬೆಳೆ ವಿಮೆ ಮಾಡಿಸಬೇಕು" },
+    { kn: "ಗೊಬ್ಬರದ ಪ್ರಮಾಣ", en: "Fertilizer", prompt: "ನನ್ನ ಬೆಳೆಗೆ ಎಷ್ಟು ಗೊಬ್ಬರ ಹಾಕಬೇಕು?" },
+    { kn: "ಇಂದಿನ ಹವಾಮಾನ", en: "Live Weather", prompt: "ಇವತ್ತು ಮಳೆಯ ಮುನ್ಸೂಚನೆ ಹೇಗಿದೆ?" },
+    { kn: "ಕೀಟ ಮತ್ತು ರೋಗ", en: "Pest & Disease", prompt: "ನನ್ನ ಬೆಳೆಗೆ ರೋಗ ಬಂದಿದೆ, ಹತೋಟಿಗೆ ಔಷಧಿ ತಿಳಿಸಿ" },
+    { kn: "ಮಾರುಕಟ್ಟೆ ದರ", en: "Market Prices", prompt: "ನನ್ನ ಬೆಳೆಗೆ ಇಂದಿನ ಮಾರುಕಟ್ಟೆ ಬೆಲೆ ಎಷ್ಟು?" },
+    { kn: "ಕೃಷಿ ಸಾಲ (KCC)", en: "KCC Loan", prompt: "ಕಿಸಾನ್ ಕ್ರೆಡಿಟ್ ಕಾರ್ಡ್ ಸಾಲದ ನಿಯಮಗಳು ತಿಳಿಸಿ" },
+    { kn: "ಸಮಗ್ರ ನೆರವು", en: "Complete Advisory", prompt: "ನನ್ನ ಜಮೀನಿಗೆ ಸಮಗ್ರ ಕೃಷಿ ನೆರವು ನೀಡಿ" }
+  ];
+
   const hasInitializedRef = useRef(false);
   useEffect(() => {
     if (hasInitializedRef.current) return;
@@ -540,6 +562,13 @@ export const VoiceAssistantPage: React.FC = () => {
         setConfirmedDetails((prev) => ({ ...prev, ...res.confirmed_details }));
       } else if (res.session_details) {
         setConfirmedDetails((prev) => ({ ...prev, ...res.session_details }));
+      }
+
+      // Bidirectional Real-time Profile Synchronization (Phase 6)
+      if (res.profile_updated || res.confirmed_details) {
+        try {
+          await refreshProfile();
+        } catch (e) {}
       }
 
       if (res.audio_url && !isMuted && autoVoiceResponse) {

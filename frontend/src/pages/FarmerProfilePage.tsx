@@ -19,6 +19,9 @@ import {
   Play,
   Square,
   ShieldCheck,
+  Sprout,
+  Tractor,
+  Compass,
   Check,
   Bot
 } from 'lucide-react';
@@ -68,6 +71,17 @@ export const FarmerProfilePage: React.FC = () => {
   const [selectedTaluk, setSelectedTaluk] = useState('Belagavi');
   const [accountCreatedAt, setAccountCreatedAt] = useState<string>('');
 
+  // Agricultural Details State (Synchronized with AI Voice Assistant)
+  const [village, setVillage] = useState('');
+  const [landAcres, setLandAcres] = useState('');
+  const [landOwnership, setLandOwnership] = useState('Own');
+  const [primaryCrop, setPrimaryCrop] = useState('Paddy');
+  const [farmerCategory, setFarmerCategory] = useState('Small & Marginal');
+  const [irrigationType, setIrrigationType] = useState('Rainfed');
+  const [soilType, setSoilType] = useState('Red Soil');
+  const [season, setSeason] = useState('Kharif');
+  const [cropStage, setCropStage] = useState('Tillering / Flowering');
+
   // Audio Preview State
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -114,6 +128,25 @@ export const FarmerProfilePage: React.FC = () => {
       const dist = profile?.district || 'Belagavi';
       setSelectedDistrict(dist);
       setSelectedTaluk(profile?.taluk || 'Belagavi');
+
+      // Sync agricultural details
+      setVillage(profile?.village || '');
+      setLandAcres(profile?.land_acres !== undefined && profile?.land_acres !== null ? String(profile.land_acres) : '');
+      setLandOwnership(profile?.land_ownership || 'Own');
+      
+      let pCrop = (profile as any)?.primary_crop;
+      if (!pCrop && profile?.crops_grown) {
+        try {
+          const arr = typeof profile.crops_grown === 'string' ? JSON.parse(profile.crops_grown) : profile.crops_grown;
+          if (Array.isArray(arr) && arr.length > 0) pCrop = arr[0];
+        } catch (e) {}
+      }
+      setPrimaryCrop(pCrop || 'Paddy');
+      setFarmerCategory(profile?.farmer_category || 'Small & Marginal');
+      setIrrigationType(profile?.irrigation_type || 'Rainfed');
+      setSoilType((profile as any)?.soil_type || 'Red Soil');
+      setSeason((profile as any)?.agricultural_season || 'Kharif');
+      setCropStage((profile as any)?.crop_stage || 'Tillering / Flowering');
 
       // Account creation date
       const createdDate = (profile as any)?.account_created_at || user?.created_at || profile?.created_at;
@@ -193,12 +226,24 @@ export const FarmerProfilePage: React.FC = () => {
 
     setPersonalSaving(true);
     try {
+      const parsedAcres = landAcres.trim() ? parseFloat(landAcres) : undefined;
       await api.updateFarmerProfile({
         name: fullName.trim(),
         username: username.trim() || undefined,
         email: email.trim() || undefined,
         district: selectedDistrict,
-        taluk: selectedTaluk
+        taluk: selectedTaluk,
+        village: village.trim() || undefined,
+        land_acres: parsedAcres,
+        land_ownership: landOwnership,
+        primary_crop: primaryCrop,
+        crops_grown: primaryCrop ? [primaryCrop] : [],
+        farmer_category: farmerCategory,
+        irrigation_type: irrigationType,
+        soil_type: soilType,
+        agricultural_season: season,
+        crop_stage: cropStage,
+        confirmed_fields: "district, taluk, land_acres, crop, irrigation, ownership"
       });
 
       await refreshProfile();
@@ -278,6 +323,25 @@ export const FarmerProfilePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
       <div className="max-w-4xl mx-auto space-y-8">
+        {/* Primary Interface Mode Switcher (Voice Assistant <-> Manual Mode) */}
+        <div className="flex items-center justify-center gap-3 p-1.5 bg-slate-200 dark:bg-slate-800/80 rounded-2xl max-w-md mx-auto shadow-inner">
+          <button
+            type="button"
+            onClick={() => navigate('/voice-assistant')}
+            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition"
+          >
+            <Mic className="w-4 h-4 text-emerald-600" />
+            <span>{language === 'kn' ? 'ಧ್ವನಿ ಸಹಾಯಕ' : 'Voice Assistant'}</span>
+          </button>
+          <button
+            type="button"
+            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold bg-emerald-600 text-white shadow-md transition"
+          >
+            <Sliders className="w-4 h-4" />
+            <span>{language === 'kn' ? 'ಹಸ್ತಚಾಲಿತ ನಮೂನೆ' : 'Manual Mode'}</span>
+          </button>
+        </div>
+
         {/* Header Banner */}
         <div className="bg-gradient-to-r from-emerald-700 via-green-700 to-teal-800 rounded-2xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
           <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -460,6 +524,148 @@ export const FarmerProfilePage: React.FC = () => {
                       {tName}
                     </option>
                   ))}
+                </select>
+              </div>
+
+              {/* Village */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+                  {language === 'kn' ? 'ಗ್ರಾಮ (Village)' : 'Village'}
+                </label>
+                <input
+                  type="text"
+                  value={village}
+                  onChange={(e) => setVillage(e.target.value)}
+                  placeholder="e.g. Belagundi"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm transition"
+                />
+              </div>
+
+              {/* Land Size (Acres) */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+                  {language === 'kn' ? 'ಜಮೀನಿನ ವಿಸ್ತೀರ್ಣ (Land Size in Acres)' : 'Land Size (Acres)'} *
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  max="1000"
+                  value={landAcres}
+                  onChange={(e) => setLandAcres(e.target.value)}
+                  placeholder="e.g. 3.5"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm transition"
+                />
+              </div>
+
+              {/* Land Ownership */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+                  {language === 'kn' ? 'ಭೂ ಮಾಲೀಕತ್ವ (Land Ownership)' : 'Land Ownership'}
+                </label>
+                <select
+                  value={landOwnership}
+                  onChange={(e) => setLandOwnership(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm transition"
+                >
+                  <option value="Own">{language === 'kn' ? 'ಸ್ವಂತ ಜಮೀನು (Owned)' : 'Owned'}</option>
+                  <option value="Leased">{language === 'kn' ? 'ಗುತ್ತಿಗೆ / ಗೇಣಿ (Leased / Tenant)' : 'Leased / Tenant'}</option>
+                  <option value="Shared">{language === 'kn' ? 'ಪಾಲುದಾರಿಕೆ (Shared)' : 'Shared'}</option>
+                </select>
+              </div>
+
+              {/* Primary Crop */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+                  {language === 'kn' ? 'ಮುಖ್ಯ ಬೆಳೆ (Primary Crop)' : 'Primary Crop'} *
+                </label>
+                <select
+                  value={primaryCrop}
+                  onChange={(e) => setPrimaryCrop(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm transition"
+                >
+                  <option value="Paddy">ಭತ್ತ (Paddy)</option>
+                  <option value="Sugarcane">ಕಬ್ಬು (Sugarcane)</option>
+                  <option value="Groundnut">ಶೇಂಗಾ (Groundnut)</option>
+                  <option value="Maize">ಮೆಕ್ಕೆಜೋಳ (Maize)</option>
+                  <option value="Cotton">ಹತ್ತಿ (Cotton)</option>
+                  <option value="Tur">ತೊಗರಿ (Tur / Red Gram)</option>
+                  <option value="Jowar">ಜೋಳ (Jowar / Sorghum)</option>
+                  <option value="Ragi">ರಾಗಿ (Ragi / Finger Millet)</option>
+                  <option value="Bengal Gram">ಕಡಲೆ (Bengal Gram / Chickpea)</option>
+                  <option value="Sunflower">ಸೂರ್ಯಕಾಂತಿ (Sunflower)</option>
+                  <option value="Wheat">ಗೋಧಿ (Wheat)</option>
+                  <option value="Onion">ಈರುಳ್ಳಿ (Onion)</option>
+                  <option value="Tomato">ಟೊಮೆಟೊ (Tomato)</option>
+                </select>
+              </div>
+
+              {/* Farmer Category */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+                  {language === 'kn' ? 'ರೈತ ವರ್ಗ (Farmer Category)' : 'Farmer Category'}
+                </label>
+                <select
+                  value={farmerCategory}
+                  onChange={(e) => setFarmerCategory(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm transition"
+                >
+                  <option value="Small & Marginal">ಸಣ್ಣ ಮತ್ತು ಅತಿ ಸಣ್ಣ (Small & Marginal: &lt; 5 acres)</option>
+                  <option value="Marginal farmer">ಅತಿ ಸಣ್ಣ ರೈತರು (Marginal: &lt; 2.5 acres)</option>
+                  <option value="Small farmer">ಸಣ್ಣ ರೈತರು (Small: 2.5 - 5 acres)</option>
+                  <option value="General">ಸಾಮಾನ್ಯ ವರ್ಗ (General Farmer)</option>
+                  <option value="SC/ST">SC / ST ರೈತರು (SC / ST Category)</option>
+                </select>
+              </div>
+
+              {/* Irrigation Type */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+                  {language === 'kn' ? 'ನೀರಾವರಿ ಸೌಲಭ್ಯ (Irrigation Facility)' : 'Irrigation Facility'}
+                </label>
+                <select
+                  value={irrigationType}
+                  onChange={(e) => setIrrigationType(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm transition"
+                >
+                  <option value="Rainfed">ಮಳೆಯಾಶ್ರಿತ / ಖುಷ್ಕಿ (Rainfed)</option>
+                  <option value="Borewell">ಕೊಳವೆಬಾವಿ (Borewell)</option>
+                  <option value="Canal">ಕಾಲುವೆ ನೀರಾವರಿ (Canal)</option>
+                  <option value="Drip">ಹನಿ ನೀರಾವರಿ (Drip)</option>
+                  <option value="Sprinkler">ತುಂತುರು ನೀರಾವರಿ (Sprinkler)</option>
+                </select>
+              </div>
+
+              {/* Soil Type */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+                  {language === 'kn' ? 'ಮಣ್ಣಿನ ವಿಧ (Soil Type)' : 'Soil Type'}
+                </label>
+                <select
+                  value={soilType}
+                  onChange={(e) => setSoilType(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm transition"
+                >
+                  <option value="Black Soil">ಕಪ್ಪು ಮಣ್ಣು / ಎರೆ ಮಣ್ಣು (Black Soil)</option>
+                  <option value="Red Soil">ಕೆಂಪು ಮಣ್ಣು / ಮಸಾರಿ (Red Soil)</option>
+                  <option value="Loamy Soil">ಗೋಡು ಮಣ್ಣು (Loamy Soil)</option>
+                  <option value="Sandy Soil">ಮರಳು ಮಿಶ್ರಿತ ಮಣ್ಣು (Sandy Soil)</option>
+                </select>
+              </div>
+
+              {/* Agricultural Season */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+                  {language === 'kn' ? 'ಕೃಷಿ ಹಂಗಾಮು (Crop Season)' : 'Crop Season'}
+                </label>
+                <select
+                  value={season}
+                  onChange={(e) => setSeason(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm transition"
+                >
+                  <option value="Kharif">ಮುಂಗಾರು ಹಂಗಾಮು (Kharif)</option>
+                  <option value="Rabi">ಹಿಂಗಾರು ಹಂಗಾಮು (Rabi)</option>
+                  <option value="Summer">ಬೇಸಿಗೆ ಹಂಗಾಮು (Summer)</option>
                 </select>
               </div>
 

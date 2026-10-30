@@ -161,7 +161,7 @@ def run_rag_api_tests():
     # 11. Profile-Driven Scheme Recommendation with RAG Citations
     print("\n[Test 11] POST /api/chat - Farmer Profile with Scheme Recommendation & Citations...")
     chat_payload_2 = {
-        "message": "ನಾನು ಭತ್ತ ಬೆಳೆಯುತ್ತೇನೆ ಮತ್ತು ಬೆಳಗಾವಿ ಜಿಲ್ಲೆಯವನು. ನನ್ನ ಬಳಿ ೩ ಎಕರೆ ಜಮೀನಿದೆ.",
+        "message": "ನಾನು ಭತ್ತ ಬೆಳೆಯುತ್ತೇನೆ ಮತ್ತು ಬೆಳಗಾವಿ ಜಿಲ್ಲೆಯವನು, ೩ ಎಕರೆ ಜಮೀನಿದೆ. ನನಗೆ ಯಾವ ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು ಸಿಗುತ್ತವೆ?",
         "session_id": "test_rag_chat_session_02",
         "language": "kn",
         "regional_preference": "North Karnataka"

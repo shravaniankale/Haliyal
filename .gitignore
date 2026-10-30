@@ -28,6 +28,16 @@ ENV/
 *.sqlite3
 krishi_mitra.db
 backend/krishi_mitra.db
+fresh_test.db
+backend/fresh_test.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ChromaDB vector store indexes & binary caches
+chroma_db/
+backend/chroma_db/
+*.bin
 
 # Audio caches
 backend/static_audio/*.mp3
@@ -48,3 +58,8 @@ yarn-error.log*
 .idea/
 *.swp
 *.swo
+
+# Test caches & coverage
+.pytest_cache/
+.coverage
+htmlcov/
