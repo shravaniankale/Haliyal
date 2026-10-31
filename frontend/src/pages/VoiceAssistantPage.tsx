@@ -93,6 +93,7 @@ export const VoiceAssistantPage: React.FC = () => {
   // Speech Recognition
   const recognitionRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const handleSendRef = useRef<(text: string, transcript?: string) => void>(() => {});
 
   // Conversational Workflow State Machine Stage & Confirmed Details
   const [currentStage, setCurrentStage] = useState<string>('STAGE_COLLECT_DISTRICT');
@@ -342,10 +343,14 @@ export const VoiceAssistantPage: React.FC = () => {
         }
 
         if (final && final.trim()) {
+          const spoken = final.trim();
           setInterimTranscript('');
           // Set preview for farmer review before sending
-          setSpeechTranscriptPreview(final.trim());
-          setConvState('idle');
+          setSpeechTranscriptPreview(spoken);
+          setConvState('processing');
+          if (handleSendRef.current) {
+            handleSendRef.current(spoken, spoken);
+          }
         }
       };
 
@@ -550,8 +555,17 @@ export const VoiceAssistantPage: React.FC = () => {
     }
   };
 
-  const handleStartVoiceConversation = () => {
+  const handleStartVoiceConversation = async () => {
     setHasStartedVoice(true);
+    // Request microphone permission on user gesture
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+      } catch (err) {
+        console.warn('Microphone permission request warning:', err);
+      }
+    }
     const lastBotMsg = [...messages].reverse().find((m) => m.sender === 'assistant');
     if (lastBotMsg) {
       playAudio(lastBotMsg.audio_url || '', lastBotMsg.id || 1, lastBotMsg.text_kn || lastBotMsg.text);
@@ -679,6 +693,8 @@ export const VoiceAssistantPage: React.FC = () => {
       setTimeout(() => setConvState('idle'), 2500);
     }
   };
+
+  handleSendRef.current = handleSend;
 
   // Start New Conversation
   const handleStartNewConversation = async () => {

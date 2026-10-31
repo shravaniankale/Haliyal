@@ -374,6 +374,47 @@ export const FarmerProfilePage: React.FC = () => {
         {/* =========================================================================
             SECTION 1: PERSONAL DETAILS
         ========================================================================= */}
+
+        {/* Voice Onboarding & AI Assistant Callout Banner */}
+        <div className="bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-500/40 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-4 text-left">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md">
+              <Mic className="w-6 h-6 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-600 text-white">
+                  {language === 'kn' ? 'ಶಿಫಾರಸು ಮಾಡಲಾಗಿದೆ (Recommended)' : 'Recommended'}
+                </span>
+                <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 font-kannada">
+                  {language === 'kn' ? 'AI ಧ್ವನಿ ಆನ್‌ಬೋರ್ಡಿಂಗ್' : 'AI Voice Onboarding'}
+                </span>
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white mt-1 font-kannada">
+                {language === 'kn'
+                  ? 'ಕೈಯಾರೆ ಫಾರ್ಮ್ ತುಂಬುವ ಅಗತ್ಯವಿಲ್ಲ! ಮಾತನಾಡಿ ಪ್ರೊಫೈಲ್ ಪೂರ್ಣಗೊಳಿಸಿ'
+                  : 'No need to type manual forms! Complete your profile with Voice AI'}
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 font-kannada">
+                {language === 'kn'
+                  ? 'ನಮ್ಮ AI ಧ್ವನಿ ಸಹಾಯಕ ನಿಮ್ಮೊಂದಿಗೆ ಕನ್ನಡದಲ್ಲೇ ಮಾತನಾಡಿ ನಿಮ್ಮ ಜಮೀನು, ಬೆಳೆ ಮತ್ತು ನೀರಾವರಿ ಮಾಹಿತಿಯನ್ನು ಸುಲಭವಾಗಿ ಸಂಗ್ರಹಿಸುತ್ತದೆ.'
+                  : 'Our AI voice assistant speaks with you in natural Kannada to record your land, crop, and irrigation details.'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/voice-assistant')}
+            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all shrink-0 font-kannada"
+          >
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            <span>{language === 'kn' ? 'AI ಜೊತೆ ಮಾತನಾಡಿ (Talk to AI)' : 'Talk to AI Voice Assistant'}</span>
+          </button>
+        </div>
+
+        {/* =========================================================================
+            SECTION 1: PERSONAL DETAILS
+        ========================================================================= */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 sm:p-8 transition-colors">
           <div className="flex items-center justify-between pb-5 border-b border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-3">

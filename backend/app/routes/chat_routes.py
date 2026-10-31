@@ -515,18 +515,31 @@ def start_new_conversation(
             f"೨. ಬೆಳೆ ವಿಮೆ (Crop Insurance)\n"
             f"೩. ಗೊಬ್ಬರದ ಸಲಹೆ (Fertilizer Recommendations)\n"
             f"೪. ಬೆಳೆ ಮಾರ್ಗದರ್ಶನ (Crop Guidance)\n"
-            f"೫. ನೀರಾವರಿ ಸಲಹೆ (Irrigation Guidance)\n"
+            f"೫. ನೀರಾವರಿ ಸಲಹೆ (Irrigation Advisory)\n"
             f"೬. ಹವಾಮಾನ ಮಾಹಿತಿ (Weather Information)\n"
             f"೭. ಕೀಟ ಮತ್ತು ರೋಗ ನಿರ್ವಹಣೆ (Pest & Disease Management)\n"
             f"೮. ಕೃಷಿ ಸಾಲಗಳು (Agricultural Loans)\n"
             f"೯. ಮಾರುಕಟ್ಟೆ ದರ (Market Prices)\n"
-            f"೧೦. ಸಮಗ್ರ ಕೃಷಿ ನೆರವು (Complete Assistance)\n\n"
+            f"೧೦. ಸಂಪೂರ್ಣ ಕೃಷಿ ನೆರವು (Complete Assistance)\n\n"
             f"ನೀವು ನೇರವಾಗಿ ಮಾತನಾಡಿ ಆಯ್ಕೆ ಮಾಡಬಹುದು."
         )
         greeting_en = (
             f"Hello {farmer_name_en}! Welcome to Krishi Mitra. Your verified farm profile ({saved_details.get('district')}, {saved_details.get('land_acres')} acres, {saved_details.get('crop')}) is loaded.\n\n"
             f"What agricultural assistance do you need today?\n"
             f"1. Government schemes\n2. Crop insurance\n3. Fertilizer recommendations\n4. Crop guidance\n5. Irrigation guidance\n6. Weather information\n7. Pest & disease management\n8. Agricultural loans\n9. Market prices\n10. Complete agricultural assistance\n\nYou can speak naturally or choose an option."
+        )
+        spoken_text_kn = (
+            f"ನಮಸ್ಕಾರ {farmer_name} ಅವರೇ! ಕೃಷಿ ಮಿತ್ರಕ್ಕೆ ಸ್ವಾಗತ. ನಿಮ್ಮ ಉಳಿಸಿದ ಕೃಷಿ ಪ್ರೊಫೈಲ್ ಪರಿಶೀಲಿಸಲಾಗಿದೆ. "
+            f"ಈಗ ನಿಮಗೆ ಯಾವ ಕೃಷಿ ಸಹಾಯ ಬೇಕಾಗಿದೆ? "
+            f"ಒಂದು, ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು. ಎರಡು, ಬೆಳೆ ವಿಮೆ. ಮೂರು, ಗೊಬ್ಬರ ಸಲಹೆ. ನಾಲ್ಕು, ಬೆಳೆ ಮಾರ್ಗದರ್ಶನ. ಐದು, ನೀರಾವರಿ ಸಲಹೆ. "
+            f"ಆರು, ಹವಾಮಾನ ಮಾಹಿತಿ. ಏಳು, ಕೀಟ ಮತ್ತು ರೋಗ ನಿರ್ವಹಣೆ. ಎಂಟು, ಕೃಷಿ ಸಾಲಗಳು. ಒಂಬತ್ತು, ಮಾರುಕಟ್ಟೆ ದರ. ಹತ್ತು, ಸಂಪೂರ್ಣ ಕೃಷಿ ನೆರವು. "
+            f"ನೀವು ನೇರವಾಗಿ ಮಾತನಾಡಿ ಆಯ್ಕೆ ಮಾಡಬಹುದು."
+        )
+        spoken_text_en = (
+            f"Hello {farmer_name_en}! Welcome to Krishi Mitra. Your verified farm profile is loaded. "
+            f"What agricultural assistance do you need today? "
+            f"1. Government schemes, 2. Crop insurance, 3. Fertilizer recommendations, 4. Crop guidance, 5. Irrigation guidance, "
+            f"6. Weather information, 7. Pest and disease management, 8. Agricultural loans, 9. Market prices, 10. Complete agricultural assistance."
         )
     else:
         # Check what fields are confirmed or missing
@@ -545,32 +558,18 @@ def start_new_conversation(
         current_stage = missing_stage
         q_kn, q_en = AgriculturalConversationalAgent.get_question_for_stage(missing_stage, saved_details, reg_style)
 
-        if missing_stage == "COLLECT_DISTRICT" or not saved_details.get("district"):
-            step_prompt_kn = "ಮೊದಲು ನಿಮ್ಮ ಜಿಲ್ಲೆ ಯಾವುದು ತಿಳಿಸಿ ಅಥವಾ ನಿಮಗೆ ಬೇಕಾದ ಕೃಷಿ ಸಹಾಯವನ್ನು ನೇರವಾಗಿ ಹೇಳಿ."
-            step_prompt_en = "First, which district in Karnataka are you farming in, or speak your requirement."
-        else:
-            step_prompt_kn = q_kn
-            step_prompt_en = q_en
-
         greeting_kn = (
-            f"ನಮಸ್ಕಾರ {farmer_name} ಅವರೇ! ಕೃಷಿ ಮಿತ್ರಕ್ಕೆ ಸ್ವಾಗತ. ನಿಮಗೆ ಇಂದು ಯಾವ ಕೃಷಿ ಸಹಾಯ ಬೇಕಾಗಿದೆ?\n\n"
-            f"ನಿಮಗೆ ಯಾವ ರೀತಿಯ ಕೃಷಿ ಸಹಾಯ ಬೇಕು? ನಿಮ್ಮ ಮಾತಿನಲ್ಲಿ ಹೇಳಬಹುದು ಅಥವಾ ಕೆಳಗಿನ ಆಯ್ಕೆಗಳಲ್ಲಿ ಒಂದನ್ನು ಆರಿಸಬಹುದು:\n\n"
-            f"೧. ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು (Government Schemes)\n"
-            f"೨. ಬೆಳೆ ವಿಮೆ (Crop Insurance)\n"
-            f"೩. ಗೊಬ್ಬರ ಸಲಹೆ (Fertilizer Recommendations)\n"
-            f"೪. ಬೆಳೆ ಮಾರ್ಗದರ್ಶನ (Crop Guidance)\n"
-            f"೫. ನೀರಾವರಿ ಸಲಹೆ (Irrigation Advisory)\n"
-            f"೬. ಹವಾಮಾನ ಮಾಹಿತಿ (Weather Information)\n"
-            f"೭. ಕೀಟ ಮತ್ತು ರೋಗ ನಿರ್ವಹಣೆ (Pest & Disease Management)\n"
-            f"೮. ಕೃಷಿ ಸಾಲಗಳು (Agricultural Loans)\n"
-            f"೯. ಮಾರುಕಟ್ಟೆ ದರ (Market Prices)\n"
-            f"೧೦. ಸಂಪೂರ್ಣ ಕೃಷಿ ನೆರವು (Complete Assistance)\n\n"
-            f"{step_prompt_kn}"
+            f"ನಮಸ್ಕಾರ {farmer_name} ಅವರೇ! ಕೃಷಿ ಮಿತ್ರಕ್ಕೆ ಸ್ವಾಗತ. ನಿಮ್ಮ ಕೃಷಿ ಮಾಹಿತಿಯನ್ನು ತಿಳಿದುಕೊಳ್ಳಲು ನಾನು ಕೆಲವು ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳುತ್ತೇನೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಧ್ವನಿಯ ಮೂಲಕ ತಿಳಿಸಿ.\n\n"
+            f"ನಿಮಗೆ ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು, ಬೆಳೆ ವಿಮೆ, ಗೊಬ್ಬರದ ಸಲಹೆ ಅಥವಾ ಬೆಳೆ ಮಾರ್ಗದರ್ಶನದಂತಹ ಯಾವ ಕೃಷಿ ವಿಷಯದಲ್ಲಿ ಸಹಾಯ ಬೇಕು ಎಂದು ತಿಳಿಯಲು ಮೊದಲು ನಿಮ್ಮ ಕೃಷಿ ವಿವರಗಳನ್ನು ಪಡೆಯುತ್ತೇನೆ.\n\n"
+            f"{q_kn}"
         )
         greeting_en = (
-            f"Hello {farmer_name_en}! Welcome to Krishi Mitra. What agricultural assistance do you need today?\n\n"
-            f"1. Government schemes\n2. Crop insurance\n3. Fertilizer recommendations\n4. Crop guidance\n5. Irrigation guidance\n6. Weather information\n7. Pest & disease management\n8. Agricultural loans\n9. Market prices\n10. Complete agricultural assistance\n\n{step_prompt_en}"
+            f"Hello {farmer_name_en}! Welcome to Krishi Mitra. I will ask a few questions to understand your agricultural information. Please provide your answers by voice.\n\n"
+            f"To assist you with government schemes, crop insurance, fertilizer recommendations, or crop guidance, I will first collect your farm details.\n\n"
+            f"{q_en}"
         )
+        spoken_text_kn = f"ನಮಸ್ಕಾರ {farmer_name} ಅವರೇ! ಕೃಷಿ ಮಿತ್ರಕ್ಕೆ ಸ್ವಾಗತ. ನಿಮ್ಮ ಕೃಷಿ ಮಾಹಿತಿಯನ್ನು ತಿಳಿದುಕೊಳ್ಳಲು ನಾನು ಕೆಲವು ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳುತ್ತೇನೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಧ್ವನಿಯ ಮೂಲಕ ತಿಳಿಸಿ. {q_kn}"
+        spoken_text_en = f"Hello {farmer_name_en}! Welcome to Krishi Mitra. I will ask a few questions to understand your agricultural information. Please provide your answers by voice. {q_en}"
 
     greeting_kn = KannadaVocabularyService.adapt_to_dialect(greeting_kn, reg_style)
 
@@ -581,10 +580,8 @@ def start_new_conversation(
     # Speech synthesis for the opening greeting
     auto_voice = getattr(current_user, "auto_voice_response", True) if current_user else True
     speed = getattr(current_user, "speech_speed", 1.0) if current_user else 1.0
-    spoken_text = (
-        f"ನಮಸ್ಕಾರ {farmer_name} ಅವರೇ! ಕೃಷಿ ಮಿತ್ರಕ್ಕೆ ಸ್ವಾಗತ. ನಿಮಗೆ ಇಂದು ಯಾವ ಕೃಷಿ ಸಹಾಯ ಬೇಕಾಗಿದೆ? ನಿಮ್ಮ ಮಾತಿನಲ್ಲಿ ಹೇಳಬಹುದು ಅಥವಾ ಕೆಳಗಿನ ಆಯ್ಕೆಗಳಲ್ಲಿ ಒಂದನ್ನು ಆರಿಸಬಹುದು."
-        if lang == "kn" else f"Hello {farmer_name_en}! Welcome to Krishi Mitra. What agricultural assistance do you need today?"
-    )
+    spoken_text = spoken_text_kn if lang == "kn" else spoken_text_en
+
     audio_url = None
     if auto_voice:
         audio_url, _ = KannadaSpeechService.synthesize_kannada_speech(

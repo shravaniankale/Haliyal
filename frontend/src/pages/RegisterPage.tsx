@@ -89,7 +89,7 @@ export const RegisterPage: React.FC = () => {
       });
 
       setRegionalDialect(selectedSpeechStyle as any);
-      navigate('/profile');
+      navigate('/voice-assistant');
     } catch (err: any) {
       setError(err.message || 'ನೋಂದಣಿ ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೊಮ್ಮೆ ಪ್ರಯತ್ನಿಸಿ.');
     } finally {

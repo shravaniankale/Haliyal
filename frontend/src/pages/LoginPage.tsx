@@ -28,7 +28,7 @@ export const LoginPage: React.FC = () => {
 
     try {
       await login(mobile.trim(), password);
-      navigate('/profile');
+      navigate('/voice-assistant');
     } catch (err: any) {
       setError(err.message || 'ಲಾಗಿನ್ ವಿಫಲವಾಗಿದೆ. ವಿವರಗಳನ್ನು ಪರಿಶೀಲಿಸಿ.');
     } finally {

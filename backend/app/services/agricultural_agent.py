@@ -360,41 +360,40 @@ class AgriculturalConversationalAgent:
         farmer_name_en = context.get("username") or context.get("name") or "Farmer"
 
         if stage == STAGE_COLLECT_DISTRICT:
-            kn = "ಮೊದಲು ನಿಮ್ಮ ಜಿಲ್ಲೆ ಯಾವುದು? (ಉದಾಹರಣೆಗೆ ಬೆಳಗಾವಿ, ಧಾರವಾಡ, ಮೈಸೂರು)"
+            kn = "ನೀವು ಯಾವ ಜಿಲ್ಲೆಯಲ್ಲಿ ವಾಸಿಸುತ್ತಿದ್ದೀರಿ? (ಉದಾಹರಣೆಗೆ ಬೆಳಗಾವಿ, ಧಾರವಾಡ, ಮೈಸೂರು)"
             en = "Which district in Karnataka are you from? (e.g. Belagavi, Dharwad, Mysuru)"
         elif stage == STAGE_COLLECT_TALUKA:
             dist = context.get("district", "ಕರ್ನಾಟಕ")
             kn = f"{dist} ಜಿಲ್ಲೆ ದಾಖಲಿಸಲಾಗಿದೆ. ನಿಮ್ಮ ತಾಲೂಕು ಯಾವುದು?"
             en = f"{dist} district recorded. Which taluka is your farmland located in?"
         elif stage == STAGE_COLLECT_VILLAGE:
-            kn = "ನಿಮ್ಮ ಗ್ರಾಮ ಯಾವುದು? (ತಿಳಿಯದಿದ್ದರೆ 'ಮುಂದೆ' ಎಂದು ಹೇಳಿ)"
+            kn = "ನಿಮ್ಮ ಊರಿನ ಹೆಸರೇನು? (ತಿಳಿಯದಿದ್ದರೆ 'ಮುಂದೆ' ಎಂದು ಹೇಳಿ)"
             en = "What is your village name? (Say 'skip' if not known)"
         elif stage == STAGE_COLLECT_LAND_SIZE:
-            kn = "ನಿಮ್ಮ ಬಳಿ ಒಟ್ಟು ಎಷ್ಟು ಎಕರೆ ಜಮೀನು ಇದೆ? (ಉದಾಹರಣೆಗೆ ೩ ಎಕರೆ ಅಥವಾ ೧.೫ ಹೆಕ್ಟೇರ್)"
-            en = "How many acres of farmland do you have in total? (e.g. 3 acres or 1.5 hectares)"
+            kn = "ನಿಮ್ಮ ಬಳಿ ಎಷ್ಟು ಕೃಷಿ ಭೂಮಿ ಇದೆ? (ಉದಾಹರಣೆಗೆ ೩ ಎಕರೆ ಅಥವಾ ೧.೫ ಹೆಕ್ಟೇರ್)"
+            en = "How much agricultural land do you have? (e.g. 3 acres or 1.5 hectares)"
         elif stage == STAGE_COLLECT_OWNERSHIP:
-            land = context.get("land_acres", "ನಿಮ್ಮ")
-            kn = "ನೀವು ಸ್ವಂತ ಜಮೀನಿನಲ್ಲಿ ಕೃಷಿ ಮಾಡುತ್ತಿದ್ದೀರಾ ಅಥವಾ ಬಾಡಿಗೆ ಜಮೀನಿನಲ್ಲಿ ಕೃಷಿ ಮಾಡುತ್ತಿದ್ದೀರಾ?"
-            en = f"{land} acres recorded. Is the land owned by you or taken on lease/tenancy? (Owned / Leased / Shared)"
+            kn = "ನಿಮ್ಮ ಜಮೀನು ಸ್ವಂತದ್ದೇ ಅಥವಾ ಗುತ್ತಿಗೆಗೆ ತೆಗೆದುಕೊಂಡಿದ್ದೀರಾ? (ಸ್ವಂತ, ಗುತ್ತಿಗೆ, ಪಾಲುದಾರಿಕೆ)"
+            en = "Is your land owned or leased? (Owned / Leased / Shared)"
         elif stage == STAGE_COLLECT_FARMER_CATEGORY:
             kn = "ನೀವು ಯಾವ ವರ್ಗಕ್ಕೆ ಸೇರಿದ್ದೀರಿ? ಸಾಮಾನ್ಯ, ಪರಿಶಿಷ್ಟ ಜಾತಿ, ಪರಿಶಿಷ್ಟ ಪಂಗಡ ಅಥವಾ ಇತರೆ ವರ್ಗವೇ?"
             en = "Do you belong to marginal, small, or another farmer category? (Say 'not sure' if unknown)"
         elif stage == STAGE_COLLECT_CROPS:
-            kn = "ನೀವು ಪ್ರಸ್ತುತ ಯಾವ ಬೆಳೆ ಬೆಳೆಯುತ್ತಿದ್ದೀರಿ? (ಮತ್ತು ನಿಮ್ಮ ಬಳಿ ಒಟ್ಟು ಎಷ್ಟು ಎಕರೆ ಜಮೀನು ಇದೆ?)"
-            en = "What is your primary crop? (e.g. Paddy, Groundnut, Jowar, Ragi, Sugarcane)"
+            kn = "ನೀವು ಪ್ರಸ್ತುತ ಯಾವ ಬೆಳೆಗಳನ್ನು ಬೆಳೆಯುತ್ತಿದ್ದೀರಿ?"
+            en = "What crops are you currently cultivating? (e.g. Paddy, Groundnut, Sugarcane, Jowar)"
         elif stage == STAGE_COLLECT_OTHER_CROPS:
             crop = context.get("crop") or context.get("primary_crop", "ಮುಖ್ಯ ಬೆಳೆ")
             kn = f"ಮುಖ್ಯ ಬೆಳೆ '{crop}' ದಾಖಲಿಸಲಾಗಿದೆ. ಇದರ ಜೊತೆಗೆ ಬೇರೆ ಯಾವ ಬೆಳೆಗಳನ್ನು ಬೆಳೆಯುತ್ತಿದ್ದೀರಿ? (ಇಲ್ಲದಿದ್ದರೆ 'ಯಾವುದೂ ಇಲ್ಲ' ಎಂದು ಹೇಳಿ)"
             en = f"Primary crop '{crop}' recorded. Are you growing any other crops alongside this? (Say 'none' if only this crop)"
         elif stage == STAGE_COLLECT_IRRIGATION:
-            kn = "ನಿಮ್ಮ ಜಮೀನಿಗೆ ನೀರಾವರಿ ಸೌಲಭ್ಯ ಇದೆಯೇ? ಬೋರ್ವೆಲ್, ಬಾವಿ, ಕಾಲುವೆ ಅಥವಾ ಮಳೆಯ ನೀರನ್ನು ಅವಲಂಬಿಸಿದ್ದೀರಾ?"
-            en = "What irrigation facility is available on your farm? (Borewell, Canal, Rainfed, Drip irrigation)"
+            kn = "ನಿಮ್ಮ ಜಮೀನಿಗೆ ಯಾವ ರೀತಿಯ ನೀರಾವರಿ ಸೌಲಭ್ಯವಿದೆ? (ಬೋರ್ವೆಲ್, ಬಾವಿ, ಕಾಲುವೆ, ಮಳೆಯಾಶ್ರಿತ)"
+            en = "What irrigation facility is available on your farm? (Borewell, Well, Canal, Rainfed)"
         elif stage == STAGE_COLLECT_SOIL:
-            kn = "ನಿಮ್ಮ ಜಮೀನಿನ ಮಣ್ಣು ಯಾವ ರೀತಿಯದು? ಕಪ್ಪು ಮಣ್ಣು, ಕೆಂಪು ಮಣ್ಣು ಅಥವಾ ಬೇರೆ ರೀತಿಯ ಮಣ್ಣೇ?"
-            en = "What type of soil do you have in your farmland? (Black soil, Red soil, Loamy soil - say 'not sure' if unknown)"
+            kn = "ನಿಮ್ಮ ಜಮೀನಿನ ಮಣ್ಣಿನ ಪ್ರಕಾರ ಯಾವುದು? (ಕಪ್ಪು ಮಣ್ಣು, ಕೆಂಪು ಮಣ್ಣು - ಗೊತ್ತಿಲ್ಲದಿದ್ದರೆ 'ಗೊತ್ತಿಲ್ಲ' ಎಂದು ಹೇಳಬಹುದು)"
+            en = "What is your soil type? (Black soil, Red soil - say 'not sure' if unknown)"
         elif stage == STAGE_COLLECT_SEASON_AND_CROP_STAGE:
-            kn = "ಬಿತ್ತನೆ ಮಾಡಿದ ದಿನಾಂಕ ಅಥವಾ ತಿಂಗಳು ಮತ್ತು ಪ್ರಸ್ತುತ ಬೆಳೆಯ ಬೆಳವಣಿಗೆಯ ಹಂತ ಯಾವುದು? (ಉದಾ. ಜೂನ್‌ನಲ್ಲಿ ಬಿತ್ತನೆ, ಈಗ ಹೂವಾಡುವ ಹಂತ)"
-            en = "What was the sowing date or month and current crop growth stage? (e.g. Sown in June, currently flowering stage)"
+            kn = "ಬಿತ್ತನೆ ಮಾಡಿದ ತಿಂಗಳು ಮತ್ತು ಪ್ರಸ್ತುತ ಬೆಳೆಯ ಬೆಳವಣಿಗೆಯ ಹಂತ ಯಾವುದು? (ಉದಾಹರಣೆಗೆ ಜೂನ್‌ನಲ್ಲಿ ಬಿತ್ತನೆ, ಈಗ ಹೂ ಬಿಡುವ ಹಂತ)"
+            en = "What was the sowing month and current crop growth stage? (e.g. Sown in June, currently flowering stage)"
         elif stage == STAGE_CONFIRM_PROFILE:
             dist = context.get("district", "ಬೆಳಗಾವಿ")
             taluk = context.get("taluk", "")
@@ -405,55 +404,53 @@ class AgriculturalConversationalAgent:
             irrig = context.get("irrigation", "ಮಳೆಯಾಶ್ರಿತ")
             soil = context.get("soil_type", "ಕೆಂಪು ಮಣ್ಣು")
             kn = (
-                f"ಧನ್ಯವಾದಗಳು {farmer_name} ಅವರೇ! ನಿಮ್ಮ ಕೃಷಿ ವಿವರಗಳನ್ನು ಸಂಗ್ರಹಿಸಲಾಗಿದೆ:\n\n"
-                f"• ಜಿಲ್ಲೆ & ತಾಲೂಕು: {dist}" + (f", {taluk}\n" if taluk else "\n") +
-                f"• ಜಮೀನು: {land} ಎಕರೆ ({own})\n"
-                f"• ರೈತ ವರ್ಗ: {cat}\n"
-                f"• ಮುಖ್ಯ ಬೆಳೆ: {crop}\n"
-                f"• ನೀರಾವರಿ: {irrig}\n"
-                f"• ಮಣ್ಣು: {soil}\n\n"
+                f"ಧನ್ಯವಾದಗಳು. ನೀವು ನೀಡಿದ ಮಾಹಿತಿ:\n\n"
+                f"• ಜಿಲ್ಲೆ: {dist}\n" +
+                (f"• ತಾಲ್ಲೂಕು: {taluk}\n" if taluk else "") +
+                f"• ಭೂಮಿ: {land} ಎಕರೆ ({own})\n" +
+                f"• ಬೆಳೆ: {crop}\n" +
+                f"• ನೀರಾವರಿ: {irrig}\n" +
+                f"• ಮಣ್ಣು: {soil}\n\n" +
                 f"ಈ ಮಾಹಿತಿ ಸರಿಯಾಗಿದೆಯೇ? (ಹೌದು, ಸರಿ / ಇಲ್ಲ, ಬದಲಾಯಿಸಬೇಕು)"
             )
             en = (
-                f"Thank you {farmer_name_en}! Your farm profile summary:\n\n"
-                f"• Location: {dist}" + (f", {taluk}\n" if taluk else "\n") +
-                f"• Land: {land} Acres ({own})\n"
-                f"• Category: {cat}\n"
-                f"• Primary Crop: {crop}\n"
-                f"• Irrigation: {irrig}\n"
-                f"• Soil: {soil}\n\n"
+                f"Thank you. The information you provided:\n\n"
+                f"• District: {dist}\n" +
+                (f"• Taluk: {taluk}\n" if taluk else "") +
+                f"• Land: {land} Acres ({own})\n" +
+                f"• Crop: {crop}\n" +
+                f"• Irrigation: {irrig}\n" +
+                f"• Soil: {soil}\n\n" +
                 f"Is this information correct? (Yes, correct / No, want to change)"
             )
         elif stage == STAGE_IDENTIFY_REQUIREMENT:
             kn = (
-                f"ಉತ್ತಮ! ನಿಮ್ಮ ಕೃಷಿ ಪ್ರೊಫೈಲ್ ದೃಢೀಕರಿಸಲಾಗಿದೆ.\n\n"
-                f"ಈಗ ನಿಮಗೆ ಯಾವ ಕೃಷಿ ವಿಷಯದಲ್ಲಿ ಸಹಾಯ ಬೇಕು?\n\n"
+                f"ಧನ್ಯವಾದಗಳು! ನಿಮ್ಮ ಕೃಷಿ ಮಾಹಿತಿಯನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಗಿದೆ. ಈಗ ನಿಮಗೆ ಯಾವ ಕೃಷಿ ಸಹಾಯ ಬೇಕಾಗಿದೆ?\n\n"
                 f"೧. ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು (Government Schemes)\n"
                 f"೨. ಬೆಳೆ ವಿಮೆ (Crop Insurance)\n"
                 f"೩. ಗೊಬ್ಬರದ ಸಲಹೆ (Fertilizer Recommendations)\n"
                 f"೪. ಬೆಳೆ ಮಾರ್ಗದರ್ಶನ (Crop Guidance)\n"
-                f"೫. ನೀರಾವರಿ ಸಲಹೆ (Irrigation Guidance)\n"
+                f"೫. ನೀರಾವರಿ ಸಲಹೆ (Irrigation Advisory)\n"
                 f"೬. ಹವಾಮಾನ ಮಾಹಿತಿ (Weather Information)\n"
                 f"೭. ಕೀಟ ಮತ್ತು ರೋಗ ನಿರ್ವಹಣೆ (Pest & Disease Management)\n"
                 f"೮. ಕೃಷಿ ಸಾಲಗಳು (Agricultural Loans)\n"
                 f"೯. ಮಾರುಕಟ್ಟೆ ದರ (Market Prices)\n"
-                f"೧೦. ಸಮಗ್ರ ಕೃಷಿ ನೆರವು (Complete Assistance)\n\n"
-                f"ನೀವು ನೇರವಾಗಿ ಮಾತನಾಡಿ ಆಯ್ಕೆ ಮಾಡಬಹುದು."
+                f"೧೦. ಸಂಪೂರ್ಣ ಕೃಷಿ ನೆರವು (Complete Assistance)\n\n"
+                f"ನೀವು ನೇರವಾಗಿ ಮಾತನಾಡಿ ಆಯ್ಕೆ ಮಾಡಬಹುದು ಅಥವಾ ಆಯ್ಕೆಯನ್ನು ಒತ್ತಬಹುದು."
             )
             en = (
-                f"Great! Your agricultural profile is confirmed.\n\n"
-                f"What agricultural assistance do you need today?\n\n"
+                f"Thank you! Your agricultural profile has been saved successfully. What agricultural assistance do you need now?\n\n"
                 f"1. Government schemes\n"
                 f"2. Crop insurance\n"
                 f"3. Fertilizer recommendations\n"
                 f"4. Crop guidance\n"
-                f"5. Irrigation guidance\n"
+                f"5. Irrigation advisory\n"
                 f"6. Weather information\n"
                 f"7. Pest & disease management\n"
                 f"8. Agricultural loans\n"
                 f"9. Market prices\n"
                 f"10. Complete agricultural assistance\n\n"
-                f"You can speak naturally or choose an option."
+                f"You can speak naturally or tap an option."
             )
         else:
             kn = "ಕೃಷಿಗೆ ಸಂಬಂಧಿಸಿದಂತೆ ನೀವು ಯಾವುದೇ ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳಬಹುದು."
@@ -584,6 +581,48 @@ class AgriculturalConversationalAgent:
                 reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
                 return reply_en, reply_kn, STAGE_FOLLOW_UP, details, [], [], None, None, True, "Profile Update"
 
+            # E. Irrigation Update ("ನನ್ನ ಜಮೀನಿನಲ್ಲಿ ಈಗ ಬೋರ್ವೆಲ್ ನೀರಿನ ವ್ಯವಸ್ಥೆ ಮಾಡಿದ್ದೇನೆ" / "ಬೋರ್ವೆಲ್ ಹಾಕಿಸಿದ್ದೇನೆ" / "ಕಾಲುವೆ ನೀರಾವರಿ")
+            if any(p in user_message for p in ["ಬೋರ್ವೆಲ್", "ಬೋರ್", "ಕೊಳವೆಬಾವಿ", "ಕಾಲುವೆ", "ಹನಿ ನೀರಾವರಿ", "ತುಂತುರು", "ನೀರಾವರಿ"]) and \
+               any(p in user_message for p in ["ಮಾಡಿದ್ದೇನೆ", "ಹಾಕಿಸಿದ್ದೇನೆ", "ವ್ಯವಸ್ಥೆ", "ಬಂದಿದೆ", "ಈಗ", "ಬದಲಾಗಿದೆ", "ಆಗಿದೆ"]):
+                irrig_type = "Borewell"
+                if "ಕಾಲುವೆ" in user_message:
+                    irrig_type = "Canal"
+                elif "ಹನಿ" in user_message:
+                    irrig_type = "Drip irrigation"
+                elif "ತುಂತುರು" in user_message:
+                    irrig_type = "Sprinkler"
+                elif "ಮಳೆ" in user_message or "ಖುಷ್ಕಿ" in user_message:
+                    irrig_type = "Rainfed"
+                details["irrigation"] = irrig_type
+                details["irrigation_type"] = irrig_type
+                reply_kn = f"ಸರಿ {farmer_name} ಅವರೇ, ನಿಮ್ಮ ಜಮೀನಿನ ನೀರಾವರಿ ಸೌಲಭ್ಯವನ್ನು '{irrig_type}' ಎಂದು ನವೀಕರಿಸಲಾಗಿದೆ ಮತ್ತು ಪ್ರೊಫೈಲ್‌ನಲ್ಲಿ ಉಳಿಸಲಾಗಿದೆ. ಈ ನೀರಾವರಿಗೆ ಸೂಕ್ತವಾದ ಗೊಬ್ಬರ ಅಥವಾ ಬೆಳೆ ಸಲಹೆ ಬೇಕೇ?"
+                reply_en = f"Understood {farmer_name_en}, your irrigation facility has been updated to '{irrig_type}' and saved to your profile. Would you like fertilizer or crop guidance for this irrigation?"
+                reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+                return reply_en, reply_kn, STAGE_FOLLOW_UP, details, [], [], None, None, True, "Profile Update"
+
+            # F. Crop Stage / Sowing Stage Update ("ನನ್ನ ಬೆಳೆಗೆ ಈಗ ಹೂ ಬಿಡುವ ಹಂತ ಬಂದಿದೆ" / "ಕಾಯಿ ಕಟ್ಟುವ ಹಂತ" / "ತೆನೆ ಮೂಡುವ ಹಂತ")
+            if any(p in user_message for p in ["ಹಂತ", "ಹೂ ಬಿಡುವ", "ಕಾಯಿ ಕಟ್ಟುವ", "ತೆನೆ", "ಬೆಳವಣಿಗೆ"]) and \
+               any(p in user_message for p in ["ಬಂದಿದೆ", "ಈಗ", "ಆಗಿದೆ", "ತಲುಪಿದೆ"]):
+                stage_name = "Tillering / Flowering"
+                if "ಹೂ ಬಿಡುವ" in user_message:
+                    stage_name = "Flowering stage"
+                elif "ಕಾಯಿ ಕಟ್ಟುವ" in user_message:
+                    stage_name = "Pod / Fruit development"
+                elif "ತೆನೆ" in user_message:
+                    stage_name = "Panicle initiation"
+                details["crop_stage"] = stage_name
+                reply_kn = f"ಸರಿ {farmer_name} ಅವರೇ, ನಿಮ್ಮ ಬೆಳೆಯ ಪ್ರಸ್ತುತ ಬೆಳವಣಿಗೆ ಹಂತವನ್ನು '{stage_name}' ಎಂದು ನವೀಕರಿಸಲಾಗಿದೆ. ಈ ಹಂತಕ್ಕೆ ಅಗತ್ಯವಿರುವ ಪೋಷಕಾಂಶ ಅಥವಾ ಕೀಟ ರೋಗ ನಿರ್ವಹಣೆಯ ಸಲಹೆ ಬೇಕೇ?"
+                reply_en = f"Understood {farmer_name_en}, your crop growth stage has been recorded as '{stage_name}'. Would you like nutrient or pest management advice for this stage?"
+                reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+                return reply_en, reply_kn, STAGE_FOLLOW_UP, details, [], [], None, None, True, "Profile Update"
+
+            # G. No Changes / Closing Acknowledgement ("ಯಾವುದೂ ಬದಲಾವಣೆ ಇಲ್ಲ, ಧನ್ಯವಾದ" / "ಬದಲಾವಣೆ ಇಲ್ಲ" / "ಧನ್ಯವಾದಗಳು")
+            if any(p in user_message for p in ["ಯಾವುದೂ ಬದಲಾವಣೆ ಇಲ್ಲ", "ಯಾವ ಬದಲಾವಣೆಯೂ ಇಲ್ಲ", "ಬದಲಾವಣೆ ಇಲ್ಲ", "ಇಲ್ಲ ಧನ್ಯವಾದ", "ಧನ್ಯವಾದಗಳು", "ಯಾವುದೂ ಇಲ್ಲ ಧನ್ಯವಾದ"]):
+                reply_kn = f"ಧನ್ಯವಾದಗಳು {farmer_name} ಅವರೇ! ಕೃಷಿ ಮಿತ್ರವನ್ನು ಬಳಸಿದ್ದಕ್ಕಾಗಿ ಸಂತೋಷ. ನಿಮಗೆ ಯಾವಾಗಲಾದರೂ ಬೆಳೆ ಸಲಹೆ, ಹವಾಮಾನ ಅಥವಾ ಸರ್ಕಾರಿ ಯೋಜನೆಗಳ ಮಾಹಿತಿ ಬೇಕಾದಾಗ ಮತ್ತೆ ಮಾತನಾಡಿ. ನಿಮ್ಮ ಕೃಷಿ ಕಾರ್ಯ ಯಶಸ್ವಿಯಾಗಲಿ!"
+                reply_en = f"Thank you {farmer_name_en}! Glad to assist you on Krishi Mitra. Whenever you need crop advice, weather updates, or government schemes, feel free to talk to me again. Wishing you abundant harvests!"
+                reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+                return reply_en, reply_kn, STAGE_FOLLOW_UP, details, [], [], None, None, True, "Closing"
+
         # Check for profile correction / change request (e.g. Test 15)
         if any(w in user_lower or w in user_message for w in ["ತಪ್ಪು", "ಬದಲಾಯಿಸಬೇಕು", "ಬದಲಾವಣೆ", "change", "correction", "wrong"]):
             reply_kn = "ಖಂಡಿತ, ನೀವು ಯಾವ ಮಾಹಿತಿಯನ್ನು ಬದಲಾಯಿಸಲು ಬಯಸುತ್ತೀರಿ? (ಜಿಲ್ಲೆ, ತಾಲೂಕು, ಜಮೀನು, ಬೆಳೆ, ಅಥವಾ ನೀರಾವರಿ?)"
@@ -603,7 +642,7 @@ class AgriculturalConversationalAgent:
         elif user_clean in ["೩", "3", "ಗೊಬ್ಬರ ಸಲಹೆ", "ಗೊಬ್ಬರದ ಸಲಹೆ"] or any(k in user_clean for k in ["ಗೊಬ್ಬರದ ಮಾಹಿತಿ", "ಗೊಬ್ಬರ ಬೇಕು", "ಗೊಬ್ಬರ ಸಲಹೆ", "ಗೊಬ್ಬರ ಮಾಹಿತಿ"]):
             if not any(k in user_clean for k in ["ಎಷ್ಟು ಕೆಜಿ", "ಎಷ್ಟು ಯೂರಿಯಾ", "ಪ್ರಮಾಣ"]):
                 assistance_chosen = ("fertilizer", "ಗೊಬ್ಬರ ಸಲಹೆ", "Fertilizer Recommendations")
-        elif user_clean in ["೪", "4", "ಬೆಳೆ ಮಾರ್ಗದರ್ಶನ"] or any(k in user_clean for k in ["ಬೆಳೆ ಮಾರ್ಗದರ್ಶನ", "ಬೆಳೆ ಮಾಹಿತಿ", "ಸಾಗುವಳಿ"]):
+        elif (user_clean in ["೪", "4", "ಬೆಳೆ ಮಾರ್ಗದರ್ಶನ"] or any(k in user_clean for k in ["ಬೆಳೆ ಮಾರ್ಗದರ್ಶನ", "ಬೆಳೆ ಮಾಹಿತಿ", "ಸಾಗುವಳಿ"])) and not any(f in user_clean for f in ["ಗೊಬ್ಬರ", "fertilizer", "ಯೂರಿಯಾ", "ಡಿಎಪಿ", "npk"]):
             assistance_chosen = ("crop_guidance", "ಬೆಳೆ ಮಾರ್ಗದರ್ಶನ", "Crop Guidance")
         elif user_clean in ["೫", "5", "ನೀರಾವರಿ ಸಲಹೆ"] or any(k in user_clean for k in ["ನೀರಾವರಿ ಸಲಹೆ", "ನೀರಾವರಿ ಮಾಹಿತಿ"]):
             assistance_chosen = ("irrigation", "ನೀರಾವರಿ ಸಲಹೆ", "Irrigation Guidance")
@@ -618,13 +657,104 @@ class AgriculturalConversationalAgent:
         elif user_clean in ["೧೦", "10", "ಸಂಪೂರ್ಣ ಕೃಷಿ ನೆರವು"] or any(k in user_clean for k in ["ಸಂಪೂರ್ಣ ಕೃಷಿ ನೆರವು", "ಸಮಗ್ರ ನೆರವು"]):
             assistance_chosen = ("complete_assistance", "ಸಂಪೂರ್ಣ ಕೃಷಿ ನೆರವು", "Complete Agricultural Assistance")
 
-        if assistance_chosen and not details.get("district"):
+        if assistance_chosen:
             int_code, top_kn, top_en = assistance_chosen
             details["requested_assistance"] = int_code
-            reply_kn = f"ಖಂಡಿತ, {top_kn} ಮಾಹಿತಿಯನ್ನು ನೀಡುತ್ತೇನೆ. ಇದಕ್ಕಾಗಿ ನಿಮ್ಮ ಕೃಷಿ ವಿವರಗಳು ಬೇಕಾಗುತ್ತವೆ. ಮೊದಲು ನಿಮ್ಮ ಜಿಲ್ಲೆ ಯಾವುದು?"
-            reply_en = f"Sure, I will assist you with {top_en}. To provide tailored guidance, I will ask a few quick farm questions. First, which is your district?"
-            reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
-            return reply_en, reply_kn, STAGE_COLLECT_DISTRICT, details, [], [], None, None, True, top_kn
+
+            # Check prerequisites based on chosen assistance
+            if int_code == "weather":
+                if details.get("district"):
+                    return cls._evaluate_weather(details, regional_style, farmer_name, farmer_name_en)
+                else:
+                    reply_kn = f"ಖಂಡಿತ, {top_kn} ನೀಡುತ್ತೇನೆ. ನಿಮ್ಮ ಜಿಲ್ಲೆ ಯಾವುದು ಎಂದು ತಿಳಿಸಿ?"
+                    reply_en = f"Sure, I will provide weather information. Which district are you in?"
+                    reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+                    return reply_en, reply_kn, STAGE_COLLECT_DISTRICT, details, [], [], None, None, True, top_kn
+
+            elif int_code in ["fertilizer", "crop_guidance", "pest_disease"]:
+                if details.get("crop") or details.get("primary_crop"):
+                    if int_code == "fertilizer":
+                        return cls._evaluate_fertilizer(details, regional_style, farmer_name, farmer_name_en)
+                    elif int_code == "crop_guidance":
+                        return cls._evaluate_crop_guidance(details, regional_style, farmer_name, farmer_name_en)
+                    else:
+                        return cls._evaluate_pest_disease(details, regional_style, farmer_name, farmer_name_en)
+                else:
+                    reply_kn = f"ಖಂಡಿತ, {top_kn} ನೀಡುತ್ತೇನೆ. ಮೊದಲು ನಿಮ್ಮ ಮುಖ್ಯ ಬೆಳೆ ಯಾವುದು ಎಂದು ತಿಳಿಸಿ?"
+                    reply_en = f"Sure, I will provide {top_en}. First, what is your primary crop?"
+                    reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+                    return reply_en, reply_kn, STAGE_COLLECT_CROPS, details, [], [], None, None, True, top_kn
+
+            elif int_code in ["market_prices", "crop_insurance"]:
+                if (details.get("crop") or details.get("primary_crop")) and details.get("district"):
+                    if int_code == "market_prices":
+                        return cls._evaluate_market_prices(details, regional_style, farmer_name, farmer_name_en)
+                    else:
+                        return cls._evaluate_crop_insurance(details, regional_style, farmer_name, farmer_name_en)
+                elif not details.get("district"):
+                    reply_kn = f"ಖಂಡಿತ, {top_kn} ನೀಡುತ್ತೇನೆ. ಮೊದಲು ನಿಮ್ಮ ಜಿಲ್ಲೆ ಯಾವುದು?"
+                    reply_en = f"Sure, I will provide {top_en}. Which is your district?"
+                    reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+                    return reply_en, reply_kn, STAGE_COLLECT_DISTRICT, details, [], [], None, None, True, top_kn
+                else:
+                    reply_kn = f"ಖಂಡಿತ, {top_kn} ನೀಡುತ್ತೇನೆ. ನಿಮ್ಮ ಬೆಳೆ ಯಾವುದು?"
+                    reply_en = f"Sure, I will provide {top_en}. What is your crop?"
+                    reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+                    return reply_en, reply_kn, STAGE_COLLECT_CROPS, details, [], [], None, None, True, top_kn
+
+            elif int_code == "irrigation":
+                if details.get("district") and (details.get("crop") or details.get("primary_crop")):
+                    return cls._evaluate_irrigation(details, regional_style, farmer_name, farmer_name_en)
+                elif not details.get("district"):
+                    reply_kn = f"ಖಂಡಿತ, ನೀರಾವರಿ ಸಲಹೆ ನೀಡುತ್ತೇನೆ. ಮೊದಲು ನಿಮ್ಮ ಜಿಲ್ಲೆ ಯಾವುದು?"
+                    reply_en = f"Sure, I will provide irrigation guidance. First, which is your district?"
+                    reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+                    return reply_en, reply_kn, STAGE_COLLECT_DISTRICT, details, [], [], None, None, True, top_kn
+                else:
+                    reply_kn = f"ಖಂಡಿತ, ನೀರಾವರಿ ಸಲಹೆ ನೀಡುತ್ತೇನೆ. ನಿಮ್ಮ ಬೆಳೆ ಯಾವುದು?"
+                    reply_en = f"Sure, I will provide irrigation guidance. What is your crop?"
+                    reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+                    return reply_en, reply_kn, STAGE_COLLECT_CROPS, details, [], [], None, None, True, top_kn
+
+            elif int_code == "loans":
+                if details.get("district") and details.get("land_acres") is not None:
+                    return cls._evaluate_loans(details, regional_style, farmer_name, farmer_name_en)
+                elif not details.get("district"):
+                    reply_kn = f"ಖಂಡಿತ, ಕೃಷಿ ಸಾಲದ ಮಾಹಿತಿ ನೀಡುತ್ತೇನೆ. ಮೊದಲು ನಿಮ್ಮ ಜಿಲ್ಲೆ ಯಾವುದು?"
+                    reply_en = f"Sure, I will provide loan information. First, which is your district?"
+                    reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+                    return reply_en, reply_kn, STAGE_COLLECT_DISTRICT, details, [], [], None, None, True, top_kn
+                else:
+                    reply_kn = f"ಖಂಡಿತ, ಕೃಷಿ ಸಾಲದ ಮಾಹಿತಿ ನೀಡುತ್ತೇನೆ. ನಿಮ್ಮ ಬಳಿ ಎಷ್ಟು ಎಕರೆ ಜಮೀನಿದೆ?"
+                    reply_en = f"Sure, I will provide loan information. How many acres of land do you have?"
+                    reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+                    return reply_en, reply_kn, STAGE_COLLECT_LAND_SIZE, details, [], [], None, None, True, top_kn
+
+            elif int_code in ["government_schemes", "complete_assistance"]:
+                if details.get("district") and (details.get("crop") or details.get("primary_crop")) and details.get("land_acres") is not None:
+                    if int_code == "government_schemes":
+                        return cls._evaluate_government_schemes(details, all_schemes, regional_style, farmer_name, farmer_name_en)
+                    else:
+                        return cls._evaluate_complete_assistance(details, all_schemes, regional_style, farmer_name, farmer_name_en)
+                elif not details.get("district"):
+                    reply_kn = f"ಖಂಡಿತ, {top_kn} ಮಾಹಿತಿಯನ್ನು ನೀಡುತ್ತೇನೆ. ಇದಕ್ಕಾಗಿ ನಿಮ್ಮ ಕೃಷಿ ವಿವರಗಳು ಬೇಕಾಗುತ್ತವೆ. ಮೊದಲು ನಿಮ್ಮ ಜಿಲ್ಲೆ ಯಾವುದು?"
+                    reply_en = f"Sure, I will assist you with {top_en}. To provide tailored guidance, I will ask a few quick farm questions. First, which is your district?"
+                    reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+                    return reply_en, reply_kn, STAGE_COLLECT_DISTRICT, details, [], [], None, None, True, top_kn
+                elif not details.get("taluk"):
+                    q_kn, q_en = cls.get_question_for_stage(STAGE_COLLECT_TALUKA, details, regional_style)
+                    return q_en, q_kn, STAGE_COLLECT_TALUKA, details, [], [], None, None, True, top_kn
+                elif details.get("land_acres") is None:
+                    q_kn, q_en = cls.get_question_for_stage(STAGE_COLLECT_LAND_SIZE, details, regional_style)
+                    return q_en, q_kn, STAGE_COLLECT_LAND_SIZE, details, [], [], None, None, True, top_kn
+                elif not details.get("land_ownership"):
+                    q_kn, q_en = cls.get_question_for_stage(STAGE_COLLECT_OWNERSHIP, details, regional_style)
+                    return q_en, q_kn, STAGE_COLLECT_OWNERSHIP, details, [], [], None, None, True, top_kn
+                elif not (details.get("crop") or details.get("primary_crop")):
+                    q_kn, q_en = cls.get_question_for_stage(STAGE_COLLECT_CROPS, details, regional_style)
+                    return q_en, q_kn, STAGE_COLLECT_CROPS, details, [], [], None, None, True, top_kn
+                else:
+                    return cls._evaluate_government_schemes(details, all_schemes, regional_style, farmer_name, farmer_name_en)
 
         # Explicit Government Schemes request (e.g. Test 8)
         if any(w in user_lower or w in user_message for w in ["pm-kisan", "pm kisan", "krishi bhagya", "ಪಿಎಂ ಕಿಸಾನ್", "ಕೃಷಿ ಭಾಗ್ಯ", "ಸಹಾಯಧನ", "subsidy"]) or \
@@ -1049,6 +1179,24 @@ class AgriculturalConversationalAgent:
     # SPECIFIC AGRICULTURAL ANALYSIS EVALUATORS (Phases 5 & 6)
     # =========================================================================
 
+    CLOSING_CIRCUMSTANCE_INVITATION_KN = (
+        "\n\nನಿಮ್ಮ ಕೃಷಿ ಮಾಹಿತಿಯ ಆಧಾರದ ಮೇಲೆ ಈ ಸಲಹೆ ನೀಡಿದ್ದೇನೆ. ನಿಮ್ಮ ಜಮೀನು, ಬೆಳೆ ಅಥವಾ ಕೃಷಿ ಪರಿಸ್ಥಿತಿಯಲ್ಲಿ ಏನಾದರೂ ಹೊಸ ಬದಲಾವಣೆಗಳಿವೆಯೇ? "
+        "ಇದ್ದರೆ ಧ್ವನಿಯ ಮೂಲಕ ಹೇಳಿ, ನಿಮ್ಮ ಮಾಹಿತಿಯನ್ನು ನವೀಕರಿಸುತ್ತೇನೆ. ಇನ್ನೊಂದು ಕೃಷಿ ಸಹಾಯ ಬೇಕಿದ್ದರೆ ನೇರವಾಗಿ ಹೇಳಿ."
+    )
+    CLOSING_CIRCUMSTANCE_INVITATION_EN = (
+        "\n\nI have provided this guidance based on your farm details. Have there been any recent changes to your land, crop, or farming conditions? "
+        "If so, tell me by voice and I will update your information. If you need any other agricultural assistance, please ask."
+    )
+
+    @classmethod
+    def _attach_closing_invitation(cls, reply_kn: str, reply_en: str, regional_style: str = "Standard Kannada") -> Tuple[str, str]:
+        if cls.CLOSING_CIRCUMSTANCE_INVITATION_KN not in reply_kn:
+            reply_kn = reply_kn + cls.CLOSING_CIRCUMSTANCE_INVITATION_KN
+        if cls.CLOSING_CIRCUMSTANCE_INVITATION_EN not in reply_en:
+            reply_en = reply_en + cls.CLOSING_CIRCUMSTANCE_INVITATION_EN
+        reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+        return reply_en, reply_kn
+
     @classmethod
     def _evaluate_government_schemes(cls, details, all_schemes, regional_style, farmer_name, farmer_name_en):
         dist = details.get("district", "Belagavi")
@@ -1167,7 +1315,7 @@ class AgriculturalConversationalAgent:
                 f"Official Portal: https://raitamitra.karnataka.gov.in"
             )
 
-        reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+        reply_en, reply_kn = cls._attach_closing_invitation(reply_kn, reply_en, regional_style)
         return reply_en, reply_kn, STAGE_FOLLOW_UP, details, rec_list, citations, 0.95, "grounded_schemes", True, "Government Schemes"
 
     @classmethod
@@ -1206,7 +1354,7 @@ class AgriculturalConversationalAgent:
             f"• Helpline: {helpline}\n"
             f"Official Portal: https://samrakshane.karnataka.gov.in"
         )
-        reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+        reply_en, reply_kn = cls._attach_closing_invitation(reply_kn, reply_en, regional_style)
         return reply_en, reply_kn, STAGE_FOLLOW_UP, details, [], [], 0.95, "crop_insurance_verified", True, "Crop Insurance"
 
     @classmethod
@@ -1286,7 +1434,7 @@ class AgriculturalConversationalAgent:
             f"• Organic Recommendation: 2-3 tons of farmyard manure or vermicompost per acre with Trichoderma.\n\n"
             f"* Note: Follow your official Soil Health Card for micro-nutrient precision at Raitha Samparka Kendra."
         )
-        reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+        reply_en, reply_kn = cls._attach_closing_invitation(reply_kn, reply_en, regional_style)
         return reply_en, reply_kn, STAGE_FOLLOW_UP, details, [], [], 0.94, "scientific_fertilizer", True, "Fertilizer Guidance"
 
     @classmethod
@@ -1322,7 +1470,7 @@ class AgriculturalConversationalAgent:
         g = guidance_data.get(crop, guidance_data["Paddy"])
         reply_kn = g["kn"]
         reply_en = g["en"]
-        reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+        reply_en, reply_kn = cls._attach_closing_invitation(reply_kn, reply_en, regional_style)
         return reply_en, reply_kn, STAGE_FOLLOW_UP, details, [], [], 0.95, "crop_guidance_verified", True, "Crop Guidance"
 
     @classmethod
@@ -1350,7 +1498,7 @@ class AgriculturalConversationalAgent:
             f"• Critical Stages: Never allow moisture stress during flowering and grain formation.\n"
             f"• Government Subsidy: 70-90% subsidy for micro-irrigation under PMKSY."
         )
-        reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+        reply_en, reply_kn = cls._attach_closing_invitation(reply_kn, reply_en, regional_style)
         return reply_en, reply_kn, STAGE_FOLLOW_UP, details, [], [], 0.93, "irrigation_guidance", True, "Irrigation Guidance"
 
     @classmethod
@@ -1398,7 +1546,7 @@ class AgriculturalConversationalAgent:
             f"• Irrigation Advisory: {irrigation_en}\n"
             f"{source_note_en}"
         )
-        reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+        reply_en, reply_kn = cls._attach_closing_invitation(reply_kn, reply_en, regional_style)
         return reply_en, reply_kn, STAGE_FOLLOW_UP, details, [], [], 0.95, "live_weather_advisory", True, "Weather Information"
 
     @classmethod
@@ -1419,7 +1567,7 @@ class AgriculturalConversationalAgent:
             f"• Fungal Diseases: Spray Mancozeb or SAAF (2g/liter) on leaves.\n"
             f"• Safety: Always wear protective gear during spraying."
         )
-        reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+        reply_en, reply_kn = cls._attach_closing_invitation(reply_kn, reply_en, regional_style)
         return reply_en, reply_kn, STAGE_FOLLOW_UP, details, [], [], 0.92, "pest_disease_guidance", True, "Pest Management"
 
     @classmethod
@@ -1441,7 +1589,7 @@ class AgriculturalConversationalAgent:
             f"• Documents: RTC Pahani extract, Aadhaar Card, Sowing Certificate, 2 Photos.\n"
             f"• Application: Apply at your local Primary Agricultural Credit Society (PACS) or nationalized bank."
         )
-        reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+        reply_en, reply_kn = cls._attach_closing_invitation(reply_kn, reply_en, regional_style)
         return reply_en, reply_kn, STAGE_FOLLOW_UP, details, [], [], 0.95, "kcc_loan_guidance", True, "Agricultural Loans"
 
     @classmethod
@@ -1474,7 +1622,7 @@ class AgriculturalConversationalAgent:
             f"• Price Range: {price_info['range']}\n"
             f"Source: e-NAM & Karnataka Krishi Marata Vahini."
         )
-        reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+        reply_en, reply_kn = cls._attach_closing_invitation(reply_kn, reply_en, regional_style)
         return reply_en, reply_kn, STAGE_FOLLOW_UP, details, [], [], 0.93, "market_price_info", True, "Market Prices"
 
     @classmethod
@@ -1499,5 +1647,5 @@ class AgriculturalConversationalAgent:
             f"4. Loan: 4% subsidized crop loan up to ₹3 Lakh under KCC.\n"
             f"5. Helpline: Kisan Call Centre 1800-180-1551 for agricultural scientist guidance."
         )
-        reply_kn = KannadaVocabularyService.adapt_to_dialect(reply_kn, regional_style)
+        reply_en, reply_kn = cls._attach_closing_invitation(reply_kn, reply_en, regional_style)
         return reply_en, reply_kn, STAGE_FOLLOW_UP, details, [], [], 0.95, "complete_agri_guidance", True, "Complete Assistance"
