@@ -266,8 +266,9 @@ export const EligibilityCheckerPage: React.FC = () => {
           {/* Cards Breakdown: PASS, UNKNOWN, FAIL */}
           <div className="space-y-4">
             {evalResult.results.map((item) => {
+              const isVerificationRequired = item.eligibility_badge === 'VERIFICATION REQUIRED';
               const isPass = item.status === 'PASS';
-              const isUnknown = item.status === 'UNKNOWN';
+              const isUnknown = item.status === 'UNKNOWN' && !isVerificationRequired;
               const isFail = item.status === 'FAIL';
 
               return (
@@ -276,6 +277,8 @@ export const EligibilityCheckerPage: React.FC = () => {
                   className={`p-6 rounded-3xl border transition-all bg-white dark:bg-[#11221A] shadow-sm ${
                     isPass
                       ? 'border-green-300 dark:border-green-800/80 bg-gradient-to-r from-green-50/20 to-transparent'
+                      : isVerificationRequired
+                      ? 'border-amber-400 dark:border-amber-700/80 bg-gradient-to-r from-amber-50/30 to-transparent'
                       : isUnknown
                       ? 'border-amber-300 dark:border-amber-800/80 bg-gradient-to-r from-amber-50/20 to-transparent'
                       : 'border-red-200 dark:border-red-900/60 bg-gradient-to-r from-red-50/10 to-transparent opacity-90'
@@ -285,23 +288,37 @@ export const EligibilityCheckerPage: React.FC = () => {
                     
                     {/* Status Badge & Name */}
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {isPass && (
                           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-300 border border-green-300">
                             <CheckCircle className="w-3.5 h-3.5" />
-                            <span>ಅರ್ಹತೆ ಇದೆ (PASS)</span>
+                            <span>ಅರ್ಹತೆ ಇದೆ (ELIGIBLE)</span>
+                          </span>
+                        )}
+                        {isVerificationRequired && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-200 border border-amber-400">
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                            <span>ಪರಿಶೀಲನೆ ಅಗತ್ಯವಿದೆ (VERIFICATION REQUIRED)</span>
                           </span>
                         )}
                         {isUnknown && (
                           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300">
                             <HelpCircle className="w-3.5 h-3.5" />
-                            <span>ಮಾಹಿತಿ ಅಪೂರ್ಣ (UNKNOWN)</span>
+                            <span>ಮಾಹಿತಿ ಅಪೂರ್ಣ (INSUFFICIENT INFO)</span>
                           </span>
                         )}
                         {isFail && (
                           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300 border border-red-200">
                             <XCircle className="w-3.5 h-3.5" />
-                            <span>ಅರ್ಹತೆ ಹೊಂದಿಲ್ಲ (FAIL)</span>
+                            <span>ಅರ್ಹತೆ ಹೊಂದಿಲ್ಲ (NOT ELIGIBLE)</span>
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#D8AA48]/15 text-[#976F1D] dark:text-[#E5BE5F] border border-[#D8AA48]/30">
+                          ⭐ {Math.round((item.similarity_score || 0) * 100)}% Match
+                        </span>
+                        {item.scheme_category && (
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-[#19251E] dark:text-[#EDF3EF]">
+                            {item.scheme_category}
                           </span>
                         )}
                         <span className="text-xs text-[#69766D] dark:text-[#9BB0A4] font-semibold">
@@ -309,12 +326,17 @@ export const EligibilityCheckerPage: React.FC = () => {
                         </span>
                       </div>
 
-                      <h3 className="text-lg font-bold text-[#19251E] dark:text-[#EDF3EF] font-kannada">
+                      <h3 className="text-lg font-bold text-[#19251E] dark:text-[#EDF3EF] font-kannada mt-1">
                         {item.scheme_name_kn}
                       </h3>
                       <p className="text-xs text-[#69766D] dark:text-[#9BB0A4]">
                         {item.scheme_name}
                       </p>
+                      {item.match_reason_kn && (
+                        <p className="text-xs text-[#2F7650] dark:text-[#75A96A] font-semibold mt-1">
+                          💡 {language === 'kn' ? item.match_reason_kn : item.match_reason}
+                        </p>
+                      )}
                     </div>
 
                     {/* Action Link */}

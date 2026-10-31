@@ -129,6 +129,7 @@ class SchemeBase(BaseModel):
     scheme_name: str
     scheme_name_kn: str
     scheme_type: str
+    scheme_category: Optional[str] = "General Agriculture"
     department: str
     department_kn: str
     description: str
@@ -163,6 +164,9 @@ class SchemeBase(BaseModel):
     source_document_title: Optional[str] = None
     source_published_date: Optional[str] = None
     source_last_verified: Optional[str] = None
+    location_restrictions: Optional[str] = "All Karnataka"
+    application_period: Optional[str] = "Open Throughout Year"
+    current_status: Optional[str] = "Active"
 
 class SchemeCreate(SchemeBase):
     pass
@@ -218,6 +222,7 @@ class EligibilityItemResult(BaseModel):
     scheme_type: str
     department: str
     status: str  # "PASS", "FAIL", "UNKNOWN"
+    eligibility_badge: Optional[str] = "ELIGIBLE"  # "ELIGIBLE", "NOT ELIGIBLE", "INSUFFICIENT INFORMATION", "VERIFICATION REQUIRED"
     explanation: str
     explanation_kn: str
     matched_conditions: List[str]
@@ -228,6 +233,14 @@ class EligibilityItemResult(BaseModel):
     benefit_details_kn: str
     official_url: str
     verification_status: str
+    similarity_score: Optional[float] = 0.0
+    match_reason: Optional[str] = None
+    match_reason_kn: Optional[str] = None
+    scheme_category: Optional[str] = None
+    application_period: Optional[str] = None
+    source_reference: Optional[str] = None
+    last_verified_date: Optional[str] = None
+    current_status: Optional[str] = "Active"
 
 class EligibilityResponse(BaseModel):
     total_evaluated: int

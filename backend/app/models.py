@@ -77,6 +77,7 @@ class Scheme(Base):
     scheme_name = Column(String(200), nullable=False)
     scheme_name_kn = Column(String(200), nullable=False)
     scheme_type = Column(String(50), default="Central")  # "Central", "Karnataka State", "Synthetic Demonstration"
+    scheme_category = Column(String(100), default="General Agriculture")  # "Income Support", "Crop Insurance", "Agricultural Credit", etc.
     department = Column(String(150), nullable=False)
     department_kn = Column(String(150), nullable=False)
     description = Column(Text, nullable=False)
@@ -90,6 +91,9 @@ class Scheme(Base):
     max_land_acres = Column(Float, nullable=True)
     min_land_acres = Column(Float, nullable=True)
     required_ownership = Column(String(50), nullable=True)  # "Own", "Tenant", "Any"
+    location_restrictions = Column(String(255), default="All Karnataka")  # "All Karnataka", "Rainfed Dryland Zones", etc.
+    application_period = Column(String(150), default="Open Throughout Year")  # e.g., "Kharif Season (June-August)", etc.
+    current_status = Column(String(50), default="Active")  # "Active", "Inactive", "Suspended", "Verification Required"
     
     # Benefits & Documents
     benefit_details = Column(Text, nullable=False)

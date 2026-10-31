@@ -1199,6 +1199,9 @@ class AgriculturalConversationalAgent:
 
     @classmethod
     def _evaluate_government_schemes(cls, details, all_schemes, regional_style, farmer_name, farmer_name_en):
+        from ..schemas import EligibilityCheckRequest
+        from .eligibility_engine import DeterministicEligibilityEngine
+
         dist = details.get("district", "Belagavi")
         land = details.get("land_acres")
         own = details.get("land_ownership", "Owned")
@@ -1211,31 +1214,32 @@ class AgriculturalConversationalAgent:
         has_known_land = land is not None and land > 0
         is_rainfed = "rainfed" in irrigation.lower() or "ಮಳೆ" in irrigation or "ಖುಷ್ಕಿ" in irrigation
 
-        if all_schemes:
-            for sc in all_schemes:
-                # PM-KISAN: requires OWN land and known land
-                if "PM-KISAN" in sc.scheme_id:
-                    if not is_leased and has_known_land:
-                        matched.append(sc)
-                # PMFBY: covers both owned and leased tenant farmers for notified crops
-                elif "PMFBY" in sc.scheme_id:
-                    matched.append(sc)
-                # Krishi Bhagya: requires RAINFED dryland and <= 5.0 acres
-                elif "Krishi Bhagya" in sc.scheme_name:
-                    if is_rainfed and (not has_known_land or land <= 5.0):
-                        matched.append(sc)
-                elif getattr(sc, "max_land_acres", None) and has_known_land and land <= sc.max_land_acres:
-                    matched.append(sc)
+        req = EligibilityCheckRequest(
+            district=dist,
+            crop=crop,
+            land_acres=land,
+            land_ownership=own,
+            season="Kharif",
+            irrigation_type=irrigation,
+            farmer_category=cat
+        )
+        elig_res = DeterministicEligibilityEngine.evaluate_all(all_schemes or [], req)
 
         rec_list = []
-        for s in matched[:3]:
+        for r in elig_res.results[:6]:
             rec_list.append({
-                "scheme_id": s.scheme_id,
-                "scheme_name": s.scheme_name,
-                "scheme_name_kn": s.scheme_name_kn,
-                "benefits": s.benefit_details_kn,
-                "official_url": s.official_url,
-                "verification": s.verification_status
+                "scheme_id": r.scheme_id,
+                "scheme_name": r.scheme_name,
+                "scheme_name_kn": r.scheme_name_kn,
+                "benefits": r.benefit_details_kn,
+                "official_url": r.official_url,
+                "verification": r.verification_status,
+                "similarity_score": r.similarity_score,
+                "match_reason": r.match_reason,
+                "match_reason_kn": r.match_reason_kn,
+                "scheme_category": r.scheme_category,
+                "status": r.status,
+                "eligibility_badge": r.eligibility_badge
             })
 
         rag_res = RAGEngine.answer_query(f"PM-KISAN PMFBY Krishi Bhagya eligibility in Karnataka", preferred_language="kn")
@@ -1295,7 +1299,7 @@ class AgriculturalConversationalAgent:
                 f"   • ಉದ್ದೇಶ: ಕೊಳವೆಬಾವಿ/ಕಾಲುವೆ ನೀರಾವರಿ ಜಮೀನಿಗೆ ಹನಿ ಮತ್ತು ತುಂತುರು ನೀರಾವರಿಗೆ ಶೇ. ೭೦-೯೦ ಸಬ್ಸಿಡಿ.\n\n"
             )
             reply_kn = (
-                f"{farmer_name} ಅವರೇ, ನಿಮ್ಮ ಕೃಷಿ ವಿವರಗಳಿಗೆ ({dist} ಜಿಲ್ಲೆ, {land_display}, {own}, {irrigation}) ಹೊಂದಿಕೆಯಾಗುವ ಪ್ರಮುಖ ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು:\n\n"
+                f"{farmer_name} ಅವರೇ, ನಿಮ್ಮ ಕೃಷಿ ವಿವರಗಳಿಗೆ ({dist} ಜಿಲ್ಲೆ, {land_display}, {own}, {irrigation}) ಹೊಂದಿಕೆಯಾಗುವ ಪ್ರಮುಖ ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು (ಒಟ್ಟು {elig_res.eligible_count} ಯೋಜನೆಗಳಿಗೆ ಅರ್ಹತೆ ಹೊಂದಿದ್ದೀರಿ):\n\n"
                 f"೧. ಪ್ರಧಾನ ಮಂತ್ರಿ ಕಿಸಾನ್ ಸಮ್ಮಾನ್ ನಿಧಿ (PM-KISAN):\n"
                 f"   • ಸ್ಥಿತಿ: ಅರ್ಹರು (PASS)!\n"
                 f"   • ಉದ್ದೇಶ & ನೆರವು: ವಾರ್ಷಿಕ ₹೬,೦೦೦ ನೇರ ಆರ್ಥಿಕ ನೆರವು (ವರ್ಷಕ್ಕೆ ೩ ಕಂತುಗಳಲ್ಲಿ ಡಿಬಿಟಿ ಮೂಲಕ).\n"
@@ -1304,14 +1308,18 @@ class AgriculturalConversationalAgent:
                 f"   • ಸ್ಥಿತಿ: ಅರ್ಹರು (PASS)!\n"
                 f"   • ಉದ್ದೇಶ: ಪ್ರಕೃತಿ ವಿಕೋಪದಿಂದ ಬೆಳೆ ಹಾನಿಯಾದರೆ ಪೂರ್ಣ ವಿಮಾ ಪರಿಹಾರ (೧.೫%-೨% ಪ್ರೀಮಿಯಂ).\n\n"
                 f"{rainfed_scheme_note}"
+                f"೪. ಕಿಸಾನ್ ಕ್ರೆಡಿಟ್ ಕಾರ್ಡ್ (KCC - Crop Loan):\n"
+                f"   • ಸ್ಥಿತಿ: ಅರ್ಹರು (PASS)!\n"
+                f"   • ಉದ್ದೇಶ: ಸಕಾಲದಲ್ಲಿ ಸಾಲ ಮರುಪಾವತಿಸಿದರೆ ಕೇವಲ ೪% ಬಡ್ಡಿದರದಲ್ಲಿ ₹೩ ಲಕ್ಷದವರೆಗೆ ರಿಯಾಯಿತಿ ಬೆಳೆ ಸಾಲ.\n\n"
                 f"ಅರ್ಜಿ ಸಲ್ಲಿಸಲು ನಿಮ್ಮ ಸಮೀಪದ ರೈತ ಸಂಪರ್ಕ ಕೇಂದ್ರ ಅಥವಾ ಗ್ರಾಮ ಒನ್ (Grama One) ಕೇಂದ್ರಕ್ಕೆ ಭೇಟಿ ನೀಡಿ.\n"
                 f"ಅಧಿಕೃತ ಪೋರ್ಟಲ್: https://raitamitra.karnataka.gov.in"
             )
             reply_en = (
-                f"Hello {farmer_name_en}, based on your farm profile ({dist}, {land_display_en}, {own}, {irrigation}):\n\n"
+                f"Hello {farmer_name_en}, based on your farm profile ({dist}, {land_display_en}, {own}, {irrigation}) - {elig_res.eligible_count} schemes eligible:\n\n"
                 f"1. PM-KISAN: Eligible (PASS) - ₹6,000/year direct financial support in 3 installments.\n"
                 f"2. PMFBY Crop Insurance: Eligible (PASS) - Samrakshane portal coverage at 1.5%-2% farmer premium.\n"
-                f"3. {'Krishi Bhagya: Eligible (PASS) - 80-90% subsidy for rainfed farm ponds.' if is_rainfed else 'PMKSY: Eligible (PASS) - 70-90% subsidy for micro-irrigation.'}\n\n"
+                f"3. {'Krishi Bhagya: Eligible (PASS) - 80-90% subsidy for rainfed farm ponds.' if is_rainfed else 'PMKSY: Eligible (PASS) - 70-90% subsidy for micro-irrigation.'}\n"
+                f"4. Kisan Credit Card (KCC): Eligible (PASS) - Up to ₹3 Lakh crop credit at 4% effective interest.\n\n"
                 f"Official Portal: https://raitamitra.karnataka.gov.in"
             )
 
@@ -1529,6 +1537,62 @@ class AgriculturalConversationalAgent:
             rain_info_en = "Live weather forecast server connection unavailable (offline mode)."
             source_note_kn = "ಗಮನಿಸಿ: ನಿಖರ ಮಳೆ ಮುನ್ಸೂಚನೆಗಾಗಿ ಸ್ಥಳೀಯ ರೈತ ಸಂಪರ್ಕ ಕೇಂದ್ರ ಅಥವಾ ಕೃಷಿ ವಿಜ್ಞಾನ ಕೇಂದ್ರವನ್ನು (KVK) ಸಂಪರ್ಕಿಸಿ."
             source_note_en = "Notice: Please verify local rain and wind forecasts with Raitha Samparka Kendra."
+
+        ci = w.get("coastal_intelligence")
+        if ci and ci.get("is_coastal"):
+            zone_kn = ci.get("zone_kn", "ಕರಾವಳಿ ಪ್ರದೇಶ")
+            zone_en = ci.get("zone", "Coastal Region")
+            risk_lvl_kn = ci.get("heavy_rain_risk_level_kn", "ಸಾಮಾನ್ಯ")
+            risk_lvl_en = ci.get("heavy_rain_risk_level", "LOW RISK")
+            flood_prob_kn = ci.get("riverine_flood_probability_kn", "ಕಡಿಮೆ")
+            flood_prob_en = ci.get("riverine_flood_probability", "Low")
+            distinction_kn = ci.get("rain_vs_flood_distinction_kn", "")
+            distinction_en = ci.get("rain_vs_flood_distinction_en", "")
+
+            prec_parts_kn = []
+            prec_parts_en = []
+            for cp in ci.get("crop_precautions", [])[:3]:
+                prec_parts_kn.append(f"   • {cp['crop_kn']}: {cp['precaution_kn']}")
+                prec_parts_en.append(f"   • {cp['crop']}: {cp['precaution_en']}")
+            precautions_text_kn = "\n".join(prec_parts_kn)
+            precautions_text_en = "\n".join(prec_parts_en)
+
+            reply_kn = (
+                f"{farmer_name} ಅವರೇ, {dist} ಜಿಲ್ಲೆಯ ({taluk} ತಾಲೂಕು - {zone_kn}) ಕರಾವಳಿ ಹವಾಮಾನ ಹಾಗೂ ಪ್ರವಾಹ ಅಪಾಯದ ಮುನ್ಸೂಚನೆ:\n\n"
+                f"೧. ಪ್ರಸ್ತುತ ಹವಾಮಾನ ಸ್ಥಿತಿ:\n"
+                f"   • ವಾತಾವರಣ: {cond_kn}, ತಾಪಮಾನ {temp}°C (ತೇವಾಂಶ: {hum}%, ಗಾಳಿ: {wind} ಕಿ.ಮೀ/ಗಂಟೆ).\n"
+                f"   • ಮಳೆ ಮುನ್ಸೂಚನೆ: {rain_info_kn}\n\n"
+                f"೨. ಮಳೆ ಹಾಗೂ ಪ್ರವಾಹ ಅಪಾಯದ ಮಟ್ಟ:\n"
+                f"   • ಭಾರೀ ಮಳೆ ಅಪಾಯ: {risk_lvl_kn} ({risk_lvl_en})\n"
+                f"   • ನದಿ ಪ್ರವಾಹ ಸಾಧ್ಯತೆ: {flood_prob_kn} ({flood_prob_en})\n"
+                f"   • ಗಮನಿಸಿ: {distinction_kn}\n\n"
+                f"೩. ಬೆಳೆವಾರು ಬಸಿಗಾಲುವೆ ಮತ್ತು ರೋಗ ತಡೆ ಮುನ್ನೆಚ್ಚರಿಕೆಗಳು:\n"
+                f"{precautions_text_kn}\n\n"
+                f"೪. ಬೆಳೆ ವಿಮೆ (PMFBY / Samrakshane) ರಕ್ಷಣಾ ಮಾಹಿತಿ:\n"
+                f"   • {dist} ಜಿಲ್ಲೆಯಲ್ಲಿ ಭತ್ತ, ಅಡಿಕೆ, ಬಾಳೆ, ಕಾಳುಮೆಣಸು ಅಧಿಸೂಚಿತ ಬೆಳೆಗಳಾಗಿವೆ.\n"
+                f"   • ೭೨ ಗಂಟೆಗಳ ಕಡ್ಡಾಯ ನಿಯಮ: ಪ್ರವಾಹ/ಅತಿಯಾದ ಮಳೆಯಿಂದ ಬೆಳೆ ಹಾನಿಯಾದರೆ, ವಿಮೆ ಮಾಡಿಸಿರುವ ರೈತರು ೭೨ ಗಂಟೆಗಳ ಒಳಗೆ ಕ್ರಾಪ್ ಇನ್ಶೂರೆನ್ಸ್ ಆ್ಯಪ್ ಅಥವಾ ಸಹಾಯವಾಣಿ 1800-180-1551 ಗೆ ಕರೆ ಮಾಡಿ ಕಡ್ಡಾಯವಾಗಿ ದೂರು ದಾಖಲಿಸಬೇಕು.\n"
+                f"   • ಸೂಚನೆ: ಈಗಾಗಲೇ ಸಂಭವಿಸುತ್ತಿರುವ ಪ್ರವಾಹ ಹಾನಿಗೆ ನಂತರದಲ್ಲಿ ಹೊಸ ವಿಮೆ ಖರೀದಿಸಲು ನಿಯಮಗಳಲ್ಲಿ ಅವಕಾಶವಿಲ್ಲ.\n\n"
+                f"{source_note_kn}"
+            )
+            reply_en = (
+                f"Hello {farmer_name_en}, Coastal Weather & Flood-Risk Intelligence for {dist} ({taluk} - {zone_en}):\n\n"
+                f"1. Current Atmospheric Conditions:\n"
+                f"   • Conditions: {cond_en}, {temp}°C (Humidity: {hum}%, Wind: {wind} km/h).\n"
+                f"   • Rain Forecast: {rain_info_en}\n\n"
+                f"2. Heavy-Rain & Flood Risk Evaluation:\n"
+                f"   • Heavy-Rain Risk Level: {risk_lvl_en}\n"
+                f"   • Riverine Flood Probability: {flood_prob_en}\n"
+                f"   • Hydrological Note: {distinction_en}\n\n"
+                f"3. Agronomic & Drainage Precautions:\n"
+                f"{precautions_text_en}\n\n"
+                f"4. Proactive Crop Insurance (PMFBY / Samrakshane) Advisory:\n"
+                f"   • Notified Crops: Paddy, Arecanut, Banana, Pepper.\n"
+                f"   • Mandatory 72-Hour Window: Existing policyholders must report localized flood/inundation loss within 72 hours via Helpline 1800-180-1551.\n"
+                f"   • Legal Notice: Crop insurance cannot be newly purchased post-calamity for an already occurring loss.\n\n"
+                f"{source_note_en}"
+            )
+            reply_en, reply_kn = cls._attach_closing_invitation(reply_kn, reply_en, regional_style)
+            return reply_en, reply_kn, STAGE_FOLLOW_UP, details, [], [], 0.95, "coastal_weather_intelligence", True, "Coastal Weather & Flood Risk"
 
         reply_kn = (
             f"{dist} ಜಿಲ್ಲೆಯ ({taluk} ತಾಲೂಕು) ಪ್ರಸ್ತುತ ಕೃಷಿ ಹವಾಮಾನ ಮುನ್ಸೂಚನೆ:\n\n"

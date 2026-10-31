@@ -135,7 +135,18 @@ def get_district_weather(
                 spraying_en = "Favorable weather window for foliar nutrient and plant protection spraying."
                 spraying_kn = "ಇಂದು ಪೋಷಕಾಂಶ ಮತ್ತು ಕೀಟನಾಶಕ ಸಿಂಪಡಣೆಗೆ ಅನುಕೂಲಕರ ವಾತಾವರಣವಿದೆ."
 
-            return {
+            from ..services.weather_service import AgriculturalWeatherService
+            coastal_intel = AgriculturalWeatherService.analyze_coastal_weather_and_flood_risk(
+                district=info["name"],
+                taluk=taluk,
+                is_live=True,
+                rain_current=precip,
+                rain_24h=float(rain_sums[0]) if rain_sums else precip,
+                rain_48h=total_next_3_days_rain,
+                wind_speed=wind
+            )
+
+            res_obj = {
                 "district": info["name"],
                 "district_kn": info["name_kn"],
                 "taluk": taluk,
@@ -160,11 +171,24 @@ def get_district_weather(
                 "is_live": True,
                 "source": "Open-Meteo High-Resolution Numerical Meteorological Model"
             }
+            if coastal_intel.get("is_coastal"):
+                res_obj["coastal_intelligence"] = coastal_intel
+            return res_obj
     except Exception as e:
         pass
 
     # If live network request fails, return explicit offline indicator without deceptive mock data
-    return {
+    from ..services.weather_service import AgriculturalWeatherService
+    coastal_intel = AgriculturalWeatherService.analyze_coastal_weather_and_flood_risk(
+        district=info["name"],
+        taluk=taluk,
+        is_live=False,
+        rain_current=0.0,
+        rain_24h=0.0,
+        rain_48h=0.0,
+        wind_speed=11.0
+    )
+    fallback_obj = {
         "district": info["name"],
         "district_kn": info["name_kn"],
         "taluk": taluk,
@@ -189,3 +213,6 @@ def get_district_weather(
         "is_live": False,
         "source": "Offline Cached Meteorological Archive"
     }
+    if coastal_intel.get("is_coastal"):
+        fallback_obj["coastal_intelligence"] = coastal_intel
+    return fallback_obj

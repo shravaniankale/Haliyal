@@ -6,7 +6,8 @@ import {
   ExternalLink,
   Bookmark,
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  Clock
 } from 'lucide-react';
 import { Scheme } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -25,6 +26,9 @@ export const SchemeCard: React.FC<SchemeCardProps> = ({ scheme, onBookmarkToggle
   const [saving, setSaving] = React.useState(false);
 
   const isDemo = scheme.verification_status === 'Synthetic Demo';
+  const isVerificationRequired =
+    scheme.verification_status === 'Verification Required' ||
+    scheme.current_status === 'Verification Required';
 
   const handleToggleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -49,6 +53,8 @@ export const SchemeCard: React.FC<SchemeCardProps> = ({ scheme, onBookmarkToggle
       className={`group bg-white dark:bg-[#11221A] rounded-2xl border transition-all duration-300 flex flex-col overflow-hidden shadow-sm hover:shadow-xl ${
         isDemo
           ? 'border-amber-300 dark:border-amber-700/60'
+          : isVerificationRequired
+          ? 'border-amber-400 dark:border-amber-600/80'
           : 'border-[#E2E8DF] dark:border-[#1E382B] hover:border-[#2F7650]'
       }`}
     >
@@ -63,7 +69,7 @@ export const SchemeCard: React.FC<SchemeCardProps> = ({ scheme, onBookmarkToggle
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent"></div>
 
         {/* Verification Status Badge */}
         <div className="absolute top-3 left-3 z-10">
@@ -71,6 +77,11 @@ export const SchemeCard: React.FC<SchemeCardProps> = ({ scheme, onBookmarkToggle
             <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-500/90 text-white backdrop-blur-md shadow-md border border-amber-300">
               <AlertTriangle className="w-3.5 h-3.5" />
               <span>Synthetic Demo Record</span>
+            </span>
+          ) : isVerificationRequired ? (
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-600/95 text-white backdrop-blur-md shadow-md border border-amber-300">
+              <Clock className="w-3.5 h-3.5 text-amber-200" />
+              <span>Verification Required (State Review)</span>
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-[#174C36]/90 text-white backdrop-blur-md shadow-md border border-[#75A96A]/50">
@@ -101,6 +112,20 @@ export const SchemeCard: React.FC<SchemeCardProps> = ({ scheme, onBookmarkToggle
       {/* Card Content Body */}
       <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
         <div>
+          {/* Category Tag & Application Period */}
+          <div className="flex flex-wrap items-center gap-1.5 mb-2">
+            {scheme.scheme_category && (
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-md bg-[#174C36]/10 text-[#174C36] dark:text-[#75A96A] border border-[#174C36]/20">
+                {scheme.scheme_category}
+              </span>
+            )}
+            {scheme.application_period && (
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                {scheme.application_period}
+              </span>
+            )}
+          </div>
+
           {/* Scheme Name */}
           <h3 className="font-bold text-lg text-[#19251E] dark:text-[#EDF3EF] group-hover:text-[#174C36] dark:group-hover:text-[#75A96A] transition-colors leading-snug">
             {scheme.scheme_name_kn}

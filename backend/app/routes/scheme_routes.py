@@ -24,6 +24,7 @@ def format_scheme_response(scheme: Scheme, is_saved: bool = False) -> SchemeResp
         scheme_name=scheme.scheme_name,
         scheme_name_kn=scheme.scheme_name_kn,
         scheme_type=scheme.scheme_type,
+        scheme_category=getattr(scheme, "scheme_category", None) or "General Agriculture",
         department=scheme.department,
         department_kn=scheme.department_kn,
         description=scheme.description,
@@ -55,6 +56,9 @@ def format_scheme_response(scheme: Scheme, is_saved: bool = False) -> SchemeResp
         source_document_title=getattr(scheme, "source_document_title", None),
         source_published_date=getattr(scheme, "source_published_date", None),
         source_last_verified=getattr(scheme, "source_last_verified", None),
+        location_restrictions=getattr(scheme, "location_restrictions", None) or "All Karnataka",
+        application_period=getattr(scheme, "application_period", None) or "Open Throughout Year",
+        current_status=getattr(scheme, "current_status", None) or "Active",
         rag_document_id=getattr(scheme, "rag_document_id", None)
     )
 
@@ -81,7 +85,9 @@ def get_dashboard_stats(db: Session = Depends(get_db), current_user: Optional[Us
 def get_all_schemes(
     search: Optional[str] = Query(None),
     crop: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
     verification: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user)
 ):
@@ -97,8 +103,15 @@ def get_all_schemes(
             (Scheme.department.ilike(search_term))
         )
 
-    if verification:
+    if verification and verification != "All":
         query = query.filter(Scheme.verification_status == verification)
+
+    if category and category != "All":
+        cat_term = f"%{category.strip()}%"
+        query = query.filter(Scheme.scheme_category.ilike(cat_term))
+
+    if status and status != "All":
+        query = query.filter(Scheme.current_status == status)
 
     schemes = query.all()
 

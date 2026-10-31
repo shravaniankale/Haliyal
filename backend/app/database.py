@@ -48,7 +48,11 @@ def run_migrations():
                 ("exclusion_conditions", "TEXT"),
                 ("source_document_title", "VARCHAR(255)"),
                 ("source_published_date", "VARCHAR(50)"),
-                ("source_last_verified", "VARCHAR(50)")
+                ("source_last_verified", "VARCHAR(50)"),
+                ("scheme_category", "VARCHAR(100) DEFAULT 'General Agriculture'"),
+                ("location_restrictions", "VARCHAR(255) DEFAULT 'All Karnataka'"),
+                ("application_period", "VARCHAR(150) DEFAULT 'Open Throughout Year'"),
+                ("current_status", "VARCHAR(50) DEFAULT 'Active'")
             ]
             for col_name, col_type in schemes_cols:
                 if col_name not in existing_schemes:

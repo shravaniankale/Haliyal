@@ -54,6 +54,7 @@ export interface Scheme {
   scheme_name: string;
   scheme_name_kn: string;
   scheme_type: string;
+  scheme_category?: string;
   department: string;
   department_kn: string;
   description: string;
@@ -65,14 +66,17 @@ export interface Scheme {
   max_land_acres?: number;
   min_land_acres?: number;
   required_ownership?: string;
+  location_restrictions?: string;
   benefit_details: string;
   benefit_details_kn: string;
   required_documents: string[];
   application_steps: string[];
+  application_period?: string;
   official_url: string;
   source_url?: string;
   verification_date: string;
-  verification_status: 'Verified' | 'Synthetic Demo';
+  verification_status: string;
+  current_status?: string;
   active_status: boolean;
   image_url?: string;
   is_saved?: boolean;
@@ -85,6 +89,7 @@ export interface EligibilityResultItem {
   scheme_type: string;
   department: string;
   status: 'PASS' | 'FAIL' | 'UNKNOWN';
+  eligibility_badge?: string;
   explanation: string;
   explanation_kn: string;
   matched_conditions: string[];
@@ -95,6 +100,52 @@ export interface EligibilityResultItem {
   benefit_details_kn: string;
   official_url: string;
   verification_status: string;
+  similarity_score?: number;
+  match_reason?: string;
+  match_reason_kn?: string;
+  scheme_category?: string;
+  application_period?: string;
+  current_status?: string;
+}
+
+export interface CoastalCropPrecaution {
+  crop: string;
+  crop_kn: string;
+  precaution_en: string;
+  precaution_kn: string;
+}
+
+export interface CoastalInsuranceAdvisory {
+  eligible_notified_crops: string[];
+  notified_status_en: string;
+  notified_status_kn: string;
+  enrollment_window_status_en: string;
+  enrollment_window_status_kn: string;
+  calamity_72h_rule_en: string;
+  calamity_72h_rule_kn: string;
+  non_retroactive_warning_en: string;
+  non_retroactive_warning_kn: string;
+  helpline: string;
+  official_portal: string;
+}
+
+export interface CoastalWeatherIntelligence {
+  is_coastal: boolean;
+  district: string;
+  taluk: string;
+  zone: string;
+  zone_kn: string;
+  major_rivers: string[];
+  heavy_rain_risk_level: string;
+  heavy_rain_risk_level_kn: string;
+  riverine_flood_probability: string;
+  riverine_flood_probability_kn: string;
+  risk_description_en: string;
+  risk_description_kn: string;
+  rain_vs_flood_distinction_en: string;
+  rain_vs_flood_distinction_kn: string;
+  proactive_insurance_advisory: CoastalInsuranceAdvisory;
+  crop_precautions: CoastalCropPrecaution[];
 }
 
 export interface EligibilityResponse {
@@ -169,6 +220,7 @@ export interface WeatherData {
   last_updated: string;
   is_live: boolean;
   source: string;
+  coastal_intelligence?: CoastalWeatherIntelligence;
 }
 
 export interface MarketPrice {

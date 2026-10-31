@@ -92,11 +92,13 @@ export const api = {
   },
 
   // Schemes
-  async getSchemes(params?: { search?: string; crop?: string; verification?: string }): Promise<Scheme[]> {
+  async getSchemes(params?: { search?: string; crop?: string; verification?: string; category?: string; status?: string }): Promise<Scheme[]> {
     const q = new URLSearchParams();
     if (params?.search) q.append('search', params.search);
     if (params?.crop) q.append('crop', params.crop);
     if (params?.verification) q.append('verification', params.verification);
+    if (params?.category) q.append('category', params.category);
+    if (params?.status) q.append('status', params.status);
 
     const res = await fetch(`${BASE_URL}/schemes?${q.toString()}`, {
       headers: { ...getAuthHeader() },

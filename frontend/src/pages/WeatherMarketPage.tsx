@@ -178,6 +178,136 @@ export const WeatherMarketPage: React.FC = () => {
               </div>
             </div>
 
+            {/* SPECIALIZED COASTAL WEATHER & FLOOD-RISK INTELLIGENCE CARD */}
+            {weather.coastal_intelligence && weather.coastal_intelligence.is_coastal && (
+              <div className="p-6 sm:p-7 rounded-3xl border-2 border-cyan-500/40 bg-gradient-to-br from-cyan-950/20 via-[#11221A] to-emerald-950/20 space-y-6 shadow-md">
+                
+                {/* Header with Zone Badge */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E2E8DF] dark:border-[#1E382B] pb-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-cyan-100 dark:bg-cyan-950/80 text-cyan-800 dark:text-cyan-300 border border-cyan-300">
+                        🌊 {language === 'kn' ? weather.coastal_intelligence.zone_kn : weather.coastal_intelligence.zone}
+                      </span>
+                      <span className="text-xs text-[#69766D] dark:text-[#9BB0A4] font-semibold">
+                        {weather.coastal_intelligence.district} • {weather.coastal_intelligence.taluk}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-bold text-[#19251E] dark:text-[#EDF3EF] font-kannada">
+                      ಕರಾವಳಿ ಹವಾಮಾನ & ಪ್ರವಾಹ ಅಪಾಯ ವಿಶ್ಲೇಷಣೆ (Coastal Heavy-Rain & Flood Intelligence)
+                    </h3>
+                  </div>
+
+                  {/* 5-Level Risk Badge */}
+                  <div className="shrink-0 flex items-center gap-2">
+                    <span
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold shadow-sm flex items-center gap-1.5 ${
+                        weather.coastal_intelligence.heavy_rain_risk_level === 'OFFICIAL FLOOD WARNING'
+                          ? 'bg-red-600 text-white animate-pulse'
+                          : weather.coastal_intelligence.heavy_rain_risk_level === 'HIGH RISK'
+                          ? 'bg-amber-600 text-white'
+                          : weather.coastal_intelligence.heavy_rain_risk_level === 'MODERATE RISK'
+                          ? 'bg-yellow-500 text-black'
+                          : weather.coastal_intelligence.heavy_rain_risk_level === 'LOW RISK'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-gray-500 text-white'
+                      }`}
+                    >
+                      <AlertCircle className="w-4 h-4" />
+                      <span>{weather.coastal_intelligence.heavy_rain_risk_level}</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Risk Breakdown Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Heavy-Rain Risk */}
+                  <div className="p-4 rounded-2xl bg-white dark:bg-[#0B1711] border border-[#E2E8DF] dark:border-[#1E382B] space-y-1">
+                    <span className="text-xs font-bold text-[#174C36] dark:text-[#75A96A] block font-kannada">
+                      🌧️ ಭಾರೀ ಮಳೆ ಅಪಾಯದ ಮಟ್ಟ (Heavy-Rain Risk Level)
+                    </span>
+                    <p className="text-base font-extrabold text-[#19251E] dark:text-[#EDF3EF]">
+                      {weather.coastal_intelligence.heavy_rain_risk_level_kn} ({weather.coastal_intelligence.heavy_rain_risk_level})
+                    </p>
+                    <p className="text-xs text-[#69766D] dark:text-[#9BB0A4] pt-1">
+                      {language === 'kn' ? weather.coastal_intelligence.risk_description_kn : weather.coastal_intelligence.risk_description_en}
+                    </p>
+                  </div>
+
+                  {/* Riverine Flood Probability */}
+                  <div className="p-4 rounded-2xl bg-white dark:bg-[#0B1711] border border-[#E2E8DF] dark:border-[#1E382B] space-y-1">
+                    <span className="text-xs font-bold text-cyan-700 dark:text-cyan-400 block font-kannada">
+                      🌊 ನದಿ ಪ್ರವಾಹ ಸಂಭವನೀಯತೆ (Riverine Flood Probability)
+                    </span>
+                    <p className="text-base font-extrabold text-[#19251E] dark:text-[#EDF3EF]">
+                      {weather.coastal_intelligence.riverine_flood_probability_kn}
+                    </p>
+                    <p className="text-xs text-[#69766D] dark:text-[#9BB0A4] pt-1 font-kannada">
+                      ಪ್ರಮುಖ ನದಿಗಳು: {weather.coastal_intelligence.major_rivers.join(', ')}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Heavy-Rain vs Flood Hydrological Distinction Banner */}
+                <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 text-xs leading-relaxed space-y-1">
+                  <span className="font-bold text-blue-900 dark:text-blue-300 block font-kannada">
+                    ⚠️ ವೈಜ್ಞಾನಿಕ ಹವಾಮಾನ ಸ್ಪಷ್ಟೀಕರಣ (Hydrological Distinction):
+                  </span>
+                  <p className="text-blue-800 dark:text-blue-200 font-kannada">
+                    {language === 'kn'
+                      ? weather.coastal_intelligence.rain_vs_flood_distinction_kn
+                      : weather.coastal_intelligence.rain_vs_flood_distinction_en}
+                  </p>
+                </div>
+
+                {/* Proactive Crop Insurance Advisory Card */}
+                {weather.coastal_intelligence.proactive_insurance_advisory && (
+                  <div className="p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800/60 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sm text-[#174C36] dark:text-[#75A96A] font-kannada">
+                        🛡️ ಮುಂಜಾಗ್ರತಾ ಬೆಳೆ ವಿಮೆ ಸಲಹೆ (PMFBY / Samrakshane Advisory)
+                      </span>
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#174C36] text-white">
+                        Helpline: 1800-180-1551
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#19251E] dark:text-[#EDF3EF] leading-relaxed">
+                      {language === 'kn'
+                        ? weather.coastal_intelligence.proactive_insurance_advisory.calamity_72h_rule_kn
+                        : weather.coastal_intelligence.proactive_insurance_advisory.calamity_72h_rule_en}
+                    </p>
+                    <p className="text-[11px] text-amber-800 dark:text-amber-300 font-semibold pt-1">
+                      {language === 'kn'
+                        ? weather.coastal_intelligence.proactive_insurance_advisory.non_retroactive_warning_kn
+                        : weather.coastal_intelligence.proactive_insurance_advisory.non_retroactive_warning_en}
+                    </p>
+                  </div>
+                )}
+
+                {/* Crop-Specific Agronomic & Drainage Precautions */}
+                <div className="space-y-2 pt-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#19251E] dark:text-[#EDF3EF] font-kannada">
+                    ಬೆಳೆವಾರು ಬಸಿಗಾಲುವೆ ಮತ್ತು ರೋಗ ತಡೆ ಮುನ್ನೆಚ್ಚರಿಕೆಗಳು (Crop Drainage & Disease Safeguards):
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {weather.coastal_intelligence.crop_precautions.map((cp) => (
+                      <div
+                        key={cp.crop}
+                        className="p-3.5 rounded-xl bg-white dark:bg-[#0B1711] border border-[#E2E8DF] dark:border-[#1E382B] text-xs space-y-1"
+                      >
+                        <span className="font-bold text-[#174C36] dark:text-[#75A96A] block font-kannada">
+                          🌱 {cp.crop_kn} ({cp.crop})
+                        </span>
+                        <p className="text-[#19251E] dark:text-[#EDF3EF] leading-relaxed">
+                          {language === 'kn' ? cp.precaution_kn : cp.precaution_en}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Source & Transparency Stamp */}
             <div className="flex items-center justify-between text-[11px] text-[#69766D] dark:text-[#9BB0A4] px-1">
               <span>ಮೂಲ (Source): {weather.source}</span>
